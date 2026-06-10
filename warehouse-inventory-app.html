@@ -103,7 +103,7 @@
 <div class="app-header">
   <div class="app-title">🏭 倉庫<span>盤點</span></div>
   <div class="header-actions">
-    <button class="icon-btn" id="syncBtn" onclick="switchTab('settings')">☁️ 同步</button>
+    <button class="icon-btn connected" id="syncBtn" onclick="switchTab('settings')">☁️ 已連線</button>
     <button class="icon-btn accent" onclick="switchTab('record')">＋ 新增</button>
   </div>
 </div>
@@ -148,18 +148,12 @@
   <div class="stats-row" id="statsRow"></div>
   <div class="section-label">使用者設定</div>
   <div class="setting-group">
-    <div class="setting-row"><div class="setting-icon">👤</div><div class="setting-info"><strong>盤點人員名稱</strong><small>照片壓字及記錄顯示用</small></div><input type="text" class="setting-value" id="settingUser" value="Eric" onchange="saveSetting('userName',this.value)"></div>
+    <div class="setting-row"><div class="setting-icon">👤</div><div class="setting-info"><strong>盤點人員名稱</strong><small>照片壓字及記錄顯示用</small></div><input type="text" class="setting-value" id="settingUser" value="" onchange="saveSetting('userName',this.value)"></div>
     <div class="setting-row"><div class="setting-icon">🏢</div><div class="setting-info"><strong>部門/單位</strong><small>選填</small></div><input type="text" class="setting-value" id="settingDept" placeholder="業務部" onchange="saveSetting('dept',this.value)"></div>
   </div>
   <div class="section-label">Google 試算表同步</div>
   <div class="setting-group">
-    <div class="setting-row"><div class="setting-icon">📊</div><div class="setting-info"><strong>同步狀態</strong><small id="scriptStatusText">未設定</small></div><span id="scriptStatusDot" style="font-size:20px">⚪</span></div>
-    <div style="padding:0 16px 14px">
-      <input type="text" id="scriptUrlInput" placeholder="https://script.google.com/macros/s/..."
-        style="width:100%;background:var(--bg-input);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text-primary);font-size:12px;font-family:monospace;outline:none"
-        onchange="saveScriptUrl(this.value)">
-      <div style="font-size:11px;color:var(--text-muted);margin-top:6px">貼上 Google Apps Script 部署網址</div>
-    </div>
+    <div class="setting-row"><div class="setting-icon">📊</div><div class="setting-info"><strong>同步狀態</strong><small style="color:#4caf50">🟢 已設定，送出自動同步</small></div></div>
   </div>
   <div class="section-label">資料管理</div>
   <div class="setting-group">
@@ -175,7 +169,6 @@
 </div>
 <div class="toast" id="toast"></div>
 <canvas id="stampCanvas"></canvas>
-<!-- SUCCESS OVERLAY -->
 <div id="successOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:300;flex-direction:column;align-items:center;justify-content:center;padding:24px">
   <div style="background:var(--bg-card);border-radius:20px;padding:32px 24px;width:100%;max-width:360px;text-align:center">
     <div style="font-size:64px;margin-bottom:16px">✅</div>
@@ -187,24 +180,19 @@
   </div>
 </div>
 <script>
+const SCRIPT_URL='https://script.google.com/macros/s/AKfycbzOdSUzh1iNUCw5Md5opgCzOt3kGvUijcj4gKSMoeQDbOHZZbc1PujFq6_8ODdCJBNR/exec';
 let records=[],currentPhoto=null;
-let settings={userName:'Eric',dept:'',scriptUrl:''};
+let settings={userName:'',dept:''};
 function loadData(){try{records=JSON.parse(localStorage.getItem('wh_records')||'[]');}catch(e){records=[];}}
 function saveData(){localStorage.setItem('wh_records',JSON.stringify(records));}
 function loadSettings(){
   try{const s=JSON.parse(localStorage.getItem('wh_settings')||'{}');settings={...settings,...s};}catch(e){}
-  document.getElementById('settingUser').value=settings.userName||'Eric';
+  document.getElementById('settingUser').value=settings.userName||'';
   document.getElementById('settingDept').value=settings.dept||'';
-  document.getElementById('scriptUrlInput').value=settings.scriptUrl||'';
-  updateSyncUI();
+  // 第一次開啟，提示填名字
+  if(!settings.userName) setTimeout(()=>{showToast('請先填寫您的盤點人員名稱','warn');switchTab('settings');},800);
 }
 function saveSetting(k,v){settings[k]=v;localStorage.setItem('wh_settings',JSON.stringify(settings));}
-function saveScriptUrl(v){settings.scriptUrl=v.trim();localStorage.setItem('wh_settings',JSON.stringify(settings));updateSyncUI();}
-function updateSyncUI(){
-  const dot=document.getElementById('scriptStatusDot'),txt=document.getElementById('scriptStatusText'),btn=document.getElementById('syncBtn');
-  if(settings.scriptUrl){dot.textContent='🟢';txt.textContent='已設定，送出自動同步';btn.textContent='☁️ 已連線';btn.className='icon-btn connected';}
-  else{dot.textContent='⚪';txt.textContent='未設定';btn.textContent='☁️ 同步';btn.className='icon-btn';}
-}
 function switchTab(tab){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
@@ -247,6 +235,7 @@ async function stampPhoto(orig,record){
 }
 async function submitRecord(){
   const name1=document.getElementById('itemName').value.trim(),qty1=document.getElementById('itemQty').value;
+  if(!settings.userName){showToast('請先填寫盤點人員名稱','warn');switchTab('settings');return;}
   if(!name1){showToast('請填寫品項 1 名稱','warn');return;}
   if(!qty1){showToast('請填寫品項 1 數量','warn');return;}
   if(!getLocation()){showToast('請選擇存放位置','warn');document.getElementById('itemLocation').focus();return;}
@@ -259,16 +248,17 @@ async function submitRecord(){
   const now=new Date(),pad=n=>String(n).padStart(2,'0');
   const timeStr=now.getFullYear()+'/'+pad(now.getMonth()+1)+'/'+pad(now.getDate())+' '+pad(now.getHours())+':'+pad(now.getMinutes())+':'+pad(now.getSeconds());
   const id='WH-'+now.getFullYear()+pad(now.getMonth()+1)+pad(now.getDate())+'-'+String(records.length+1).padStart(3,'0');
-  const record={id,time:timeStr,user:settings.userName||'Eric',items,itemName:items.map(i=>i.name).join('、'),qty:items.reduce((s,i)=>s+i.qty,0),location:getLocation(),remark:document.getElementById('itemRemark').value.trim(),originalPhoto:currentPhoto||null,stampedPhoto:null,timestamp:now.getTime(),synced:false};
+  const record={id,time:timeStr,user:settings.userName,items,itemName:items.map(i=>i.name).join('、'),qty:items.reduce((s,i)=>s+i.qty,0),location:getLocation(),remark:document.getElementById('itemRemark').value.trim(),originalPhoto:currentPhoto||null,stampedPhoto:null,timestamp:now.getTime(),synced:false};
   if(currentPhoto)record.stampedPhoto=await stampPhoto(currentPhoto,record);
   records.unshift(record);saveData();
-  if(settings.scriptUrl){btn.textContent='☁️ 同步中…';await syncToSheet(record);}
+  btn.textContent='☁️ 同步中…';
+  await syncToSheet(record);
   btn.disabled=false;btn.textContent='✅ 送出記錄';
   showSuccess(record);
 }
 async function syncToSheet(record){
   try{
-    const res=await fetch(settings.scriptUrl,{method:'POST',body:JSON.stringify({id:record.id,time:record.time,user:record.user,items:record.items,location:record.location,remark:record.remark,photo:record.stampedPhoto||record.originalPhoto||null})});
+    const res=await fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({id:record.id,time:record.time,user:record.user,items:record.items,location:record.location,remark:record.remark,photo:record.stampedPhoto||record.originalPhoto||null})});
     const data=await res.json();
     if(data.success){record.synced=true;if(data.photoUrl)record.photoUrl=data.photoUrl;saveData();}
     else showToast('同步失敗：'+data.error,'warn');
@@ -299,7 +289,7 @@ function showDetail(id){
   document.getElementById('detailTitle').textContent=r.itemName;
   const its=r.items||[{name:r.itemName,qty:r.qty}];
   const itemRows=its.map((it,i)=>'<tr><td>品項 '+(i+1)+'</td><td>'+it.name+'　×'+it.qty+' 件</td></tr>').join('');
-  document.getElementById('detailContent').innerHTML=(r.stampedPhoto?'<img class="detail-photo" src="'+r.stampedPhoto+'">':r.originalPhoto?'<img class="detail-photo" src="'+r.originalPhoto+'">':'')+'<table class="detail-table"><tr><td>記錄編號</td><td>'+r.id+'</td></tr><tr><td>記錄時間</td><td>'+r.time+'</td></tr><tr><td>盤點人員</td><td>'+r.user+'</td></tr>'+itemRows+'<tr><td>存放位置</td><td>'+(r.location||'—')+'</td></tr><tr><td>備　　註</td><td>'+(r.remark||'—')+'</td></tr><tr><td>雲端狀態</td><td>'+(r.synced?'<span style="color:#4caf50">☁️ 已同步</span>':'📱 僅存本機')+'</td></tr></table><div class="detail-actions">'+(r.stampedPhoto?'<button class="primary" onclick="dlPhoto(\''+id+'\')">⬇ 壓字照</button>':'')+(r.originalPhoto?'<button onclick="dlOrig(\''+id+'\')">🖼 原始</button>':'')+(!r.synced&&settings.scriptUrl?'<button onclick="reSync(\''+id+'\')" style="background:#e8f5e9;color:#2e7d32;border-color:#a5d6a7">☁️ 補傳</button>':'')+'<button class="danger" onclick="deleteRecord(\''+id+'\')">🗑 刪除</button></div>';
+  document.getElementById('detailContent').innerHTML=(r.stampedPhoto?'<img class="detail-photo" src="'+r.stampedPhoto+'">':r.originalPhoto?'<img class="detail-photo" src="'+r.originalPhoto+'">':'')+'<table class="detail-table"><tr><td>記錄編號</td><td>'+r.id+'</td></tr><tr><td>記錄時間</td><td>'+r.time+'</td></tr><tr><td>盤點人員</td><td>'+r.user+'</td></tr>'+itemRows+'<tr><td>存放位置</td><td>'+(r.location||'—')+'</td></tr><tr><td>備　　註</td><td>'+(r.remark||'—')+'</td></tr><tr><td>雲端狀態</td><td>'+(r.synced?'<span style="color:#4caf50">☁️ 已同步</span>':'📱 僅存本機')+'</td></tr></table><div class="detail-actions">'+(r.stampedPhoto?'<button class="primary" onclick="dlPhoto(\''+id+'\')">⬇ 壓字照</button>':'')+(r.originalPhoto?'<button onclick="dlOrig(\''+id+'\')">🖼 原始</button>':'')+(!r.synced?'<button onclick="reSync(\''+id+'\')" style="background:#e8f5e9;color:#2e7d32;border-color:#a5d6a7">☁️ 補傳</button>':'')+'<button class="danger" onclick="deleteRecord(\''+id+'\')">🗑 刪除</button></div>';
   document.getElementById('detailOverlay').classList.add('open');
 }
 function closeDetail(e){if(e&&e.target!==document.getElementById('detailOverlay'))return;document.getElementById('detailOverlay').classList.remove('open');}
