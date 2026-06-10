@@ -113,7 +113,7 @@
 <div class="app-header">
   <div class="app-title">🏭 倉庫<span>盤點</span></div>
   <div class="header-actions">
-    <button class="icon-btn" id="gdriveBtn" onclick="handleGDriveAuth()">☁️ 雲端</button>
+    <button class="icon-btn" id="syncBtn" onclick="switchTab('settings')">☁️ 同步</button>
     <button class="icon-btn accent" onclick="switchTab('record')">＋ 新增</button>
   </div>
 </div>
@@ -219,28 +219,19 @@
     </div>
   </div>
 
-  <div class="section-label">Google 雲端硬碟</div>
+  <div class="section-label">Google 試算表同步</div>
   <div class="setting-group">
-    <div class="setting-row clickable" onclick="handleGDriveAuth()">
-      <div class="setting-icon">☁️</div>
-      <div class="setting-info" id="gdriveInfo"><strong>連線 Google 雲端硬碟</strong><small>送出記錄自動備份照片與 CSV</small></div>
-      <span id="gdriveArrow" style="color:var(--accent);font-size:18px">›</span>
-    </div>
-    <div class="setting-row clickable" id="gdriveLogoutRow" style="display:none" onclick="gdriveLogout()">
-      <div class="setting-icon">🔓</div>
-      <div class="setting-info"><strong>登出 Google</strong><small>取消雲端同步</small></div>
-      <span style="color:var(--danger);font-size:18px">›</span>
-    </div>
     <div class="setting-row">
-      <div class="setting-icon">🔑</div>
-      <div class="setting-info"><strong>OAuth Client ID</strong><small>貼上 Google Cloud 的 Client ID</small></div>
+      <div class="setting-icon">📊</div>
+      <div class="setting-info"><strong>同步狀態</strong><small id="scriptStatusText">未設定</small></div>
+      <span id="scriptStatusDot" style="font-size:20px">⚪</span>
     </div>
     <div style="padding:0 16px 14px">
-      <input type="text" id="clientIdInput" placeholder="xxxxx.apps.googleusercontent.com"
+      <input type="text" id="scriptUrlInput" placeholder="https://script.google.com/macros/s/..."
         style="width:100%;background:var(--bg-input);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text-primary);font-size:12px;font-family:monospace;outline:none"
-        onchange="saveSetting('clientId',this.value)">
+        onchange="saveScriptUrl(this.value)">
       <div style="font-size:11px;color:var(--text-muted);margin-top:6px">
-        取得方式：console.cloud.google.com → 建立專案 → 啟用 Drive API → OAuth 2.0 用戶端 ID（Web 應用程式）
+        貼上 Google Apps Script 部署網址，送出記錄自動寫入試算表與上傳照片
       </div>
     </div>
   </div>
@@ -284,11 +275,10 @@
 <div class="toast" id="toast"></div>
 <canvas id="stampCanvas"></canvas>
 
-<script src="https://accounts.google.com/gsi/client" async></script>
 <script>
 /* STATE */
-let records=[], currentPhoto=null, gdriveToken=null, gdriveUser=null, gdriveClient=null, gdriveFolderId=null;
-let settings={userName:'Eric',dept:'',clientId:''};
+let records=[], currentPhoto=null;
+let settings={userName:'Eric', dept:'', scriptUrl:''};
 
 function loadData(){try{records=JSON.parse(localStorage.getItem('wh_records')||'[]');}catch(e){records=[];}}
 function saveData(){localStorage.setItem('wh_records',JSON.stringify(records));}
@@ -296,11 +286,293 @@ function loadSettings(){
   try{const s=JSON.parse(localStorage.getItem('wh_settings')||'{}');settings={...settings,...s};}catch(e){}
   document.getElementById('settingUser').value=settings.userName||'Eric';
   document.getElementById('settingDept').value=settings.dept||'';
-  document.getElementById('clientIdInput').value=settings.clientId||'';
-  const saved=localStorage.getItem('wh_gdrive_token');
-  if(saved){try{const t=JSON.parse(saved);if(t.expires>Date.now()){gdriveToken=t.access_token;gdriveUser=t.user;updateGDriveUI();}}catch(e){}}
+  document.getElementById('scriptUrlInput').value=settings.scriptUrl||'';
+  updateSyncUI();
 }
 function saveSetting(k,v){settings[k]=v;localStorage.setItem('wh_settings',JSON.stringify(settings));}
+function saveScriptUrl(v){
+  settings.scriptUrl=v.trim();
+  localStorage.setItem('wh_settings',JSON.stringify(settings));
+  updateSyncUI();
+}
+function updateSyncUI(){
+  const dot=document.getElementById('scriptStatusDot');
+  const txt=document.getElementById('scriptStatusText');
+  const btn=document.getElementById('syncBtn');
+  if(settings.scriptUrl){
+    dot.textContent='🟢'; txt.textContent='已設定，送出自動同步';
+    btn.textContent='☁️ 已連線'; btn.className='icon-btn gdrive-on';
+  } else {
+    dot.textContent='⚪'; txt.textContent='未設定';
+    btn.textContent='☁️ 同步'; btn.className='icon-btn';
+  }
+}
+
+/* TABS */
+function switchTab(tab){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+tab).classList.add('active');
+  document.getElementById('tab-'+tab).classList.add('active');
+  if(tab==='list')renderList();
+  if(tab==='settings')renderStats();
+  if(tab==='record')resetForm();
+}
+
+/* PHOTO */
+function triggerCamera(){document.getElementById('cameraInput').click();}
+function triggerFile(){document.getElementById('fileInput').click();}
+function handlePhoto(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    currentPhoto=e.target.result;
+    const zone=document.getElementById('photoZone');
+    zone.innerHTML=`<img src="${currentPhoto}"><div class="photo-zone-overlay"><div style="font-size:32px">🔄</div><div style="font-size:13px;color:#fff">重新拍攝</div></div>`;
+    zone.classList.add('has-photo');zone.onclick=()=>triggerCamera();
+  };
+  reader.readAsDataURL(file);input.value='';
+}
+
+/* LOCATION */
+function checkCustomLocation(){
+  document.getElementById('customLocationField').style.display=
+    document.getElementById('itemLocation').value==='other'?'block':'none';
+}
+function getLocation(){
+  const v=document.getElementById('itemLocation').value;
+  return v==='other'?document.getElementById('customLocation').value.trim():v;
+}
+
+/* STAMP */
+async function stampPhoto(orig,record){
+  return new Promise(resolve=>{
+    const img=new Image();
+    img.onload=()=>{
+      const canvas=document.getElementById('stampCanvas');
+      const W=img.width,H=img.height;
+      canvas.width=W;canvas.height=H;
+      const ctx=canvas.getContext('2d');
+      ctx.drawImage(img,0,0);
+      const itemLine=record.items.map(i=>i.name+' x'+i.qty).join('  |  ');
+      const lines=['時間：'+record.time,'盤點人：'+record.user,'品項：'+itemLine,'位置：'+(record.location||'—'),record.remark?'備註：'+record.remark:null].filter(Boolean);
+      const fs=Math.max(20,Math.round(W*0.028));
+      const lh=fs*1.5,ph=fs*0.7,pv=fs*0.6,totalH=lines.length*lh+pv*2;
+      ctx.fillStyle='rgba(0,0,0,0.72)';ctx.fillRect(0,H-totalH,W,totalH);
+      ctx.fillStyle='#fff';ctx.font=fs+'px "Microsoft JhengHei","PingFang TC",sans-serif';ctx.textBaseline='top';
+      lines.forEach((l,i)=>ctx.fillText(l,ph,H-totalH+pv+i*lh));
+      resolve(canvas.toDataURL('image/jpeg',0.88));
+    };
+    img.src=orig;
+  });
+}
+
+/* SUBMIT */
+async function submitRecord(){
+  const name1=document.getElementById('itemName').value.trim();
+  const qty1=document.getElementById('itemQty').value;
+  if(!name1){showToast('請填寫品項 1 名稱','warn');return;}
+  if(!qty1){showToast('請填寫品項 1 數量','warn');return;}
+  const items=[];
+  [['itemName','itemQty'],['itemName2','itemQty2'],['itemName3','itemQty3']].forEach(([nId,qId])=>{
+    const n=document.getElementById(nId).value.trim();
+    const q=document.getElementById(qId).value;
+    if(n)items.push({name:n,qty:Number(q)||0});
+  });
+  const btn=document.getElementById('submitBtn');
+  btn.disabled=true;btn.textContent='⏳ 處理中…';
+  const now=new Date(),pad=n=>String(n).padStart(2,'0');
+  const timeStr=now.getFullYear()+'/'+pad(now.getMonth()+1)+'/'+pad(now.getDate())+' '+pad(now.getHours())+':'+pad(now.getMinutes())+':'+pad(now.getSeconds());
+  const id='WH-'+now.getFullYear()+pad(now.getMonth()+1)+pad(now.getDate())+'-'+String(records.length+1).padStart(3,'0');
+  const record={
+    id,time:timeStr,user:settings.userName||'Eric',items,
+    itemName:items.map(i=>i.name).join('、'),
+    qty:items.reduce((s,i)=>s+i.qty,0),
+    location:getLocation(),remark:document.getElementById('itemRemark').value.trim(),
+    originalPhoto:currentPhoto||null,stampedPhoto:null,timestamp:now.getTime(),synced:false
+  };
+  if(currentPhoto)record.stampedPhoto=await stampPhoto(currentPhoto,record);
+  records.unshift(record);saveData();
+
+  // 上傳到 Apps Script
+  if(settings.scriptUrl){
+    btn.textContent='☁️ 同步中…';
+    await syncToSheet(record);
+  }
+
+  btn.disabled=false;btn.textContent='✅ 送出記錄';
+  showToast('✅ 已儲存：'+id,'success');
+  resetForm();switchTab('list');
+}
+
+async function syncToSheet(record){
+  try{
+    const payload={
+      id:record.id, time:record.time, user:record.user,
+      items:record.items, location:record.location, remark:record.remark,
+      photo: record.stampedPhoto||record.originalPhoto||null
+    };
+    const res=await fetch(settings.scriptUrl,{
+      method:'POST',
+      body:JSON.stringify(payload)
+    });
+    const data=await res.json();
+    if(data.success){
+      record.synced=true;
+      if(data.photoUrl)record.photoUrl=data.photoUrl;
+      saveData();
+      showToast('☁️ 已同步至 Google 試算表','success');
+    } else {
+      showToast('同步失敗：'+data.error,'warn');
+    }
+  }catch(err){
+    showToast('同步失敗，資料已存本機','warn');
+  }
+}
+
+function resetForm(){
+  currentPhoto=null;
+  const zone=document.getElementById('photoZone');
+  zone.innerHTML=`<div style="font-size:48px;opacity:.4">📸</div><div class="photo-hint">點此拍照或選擇圖片<small>支援所有瀏覽器</small></div><div class="photo-zone-overlay"><div style="font-size:32px">🔄</div><div style="font-size:13px;color:#fff">重新拍攝</div></div>`;
+  zone.classList.remove('has-photo');zone.onclick=()=>triggerCamera();
+  ['itemName','itemQty','itemName2','itemQty2','itemName3','itemQty3'].forEach(id=>{document.getElementById(id).value='';});
+  document.getElementById('itemLocation').value='';
+  document.getElementById('customLocation').value='';
+  document.getElementById('itemRemark').value='';
+  document.getElementById('customLocationField').style.display='none';
+}
+
+/* LIST */
+function renderList(){
+  const q=(document.getElementById('searchInput').value||'').toLowerCase();
+  const filtered=records.filter(r=>r.itemName.toLowerCase().includes(q)||(r.location||'').toLowerCase().includes(q)||(r.remark||'').toLowerCase().includes(q)||r.id.toLowerCase().includes(q));
+  document.getElementById('recordCount').textContent='共 '+filtered.length+' 筆記錄';
+  const container=document.getElementById('recordList');
+  if(!filtered.length){
+    container.innerHTML='<div class="empty-state"><div style="font-size:48px;margin-bottom:12px">'+(records.length?'🔍':'📦')+'</div><div>'+(records.length?'沒有符合的記錄':'尚無盤點記錄')+'</div></div>';
+    return;
+  }
+  container.innerHTML=filtered.map(r=>{
+    const its=r.items||[{name:r.itemName,qty:r.qty}];
+    const tags=its.map(i=>'<span class="meta-tag">📦 '+i.name+' ×'+i.qty+'</span>').join('');
+    return '<div class="record-card" onclick="showDetail(\''+r.id+'\')">'+
+      '<div class="record-card-header"><div>'+
+      '<div class="record-item-name">'+its.map(i=>i.name).join('、')+'</div>'+
+      '<div style="font-size:12px;color:var(--text-muted);margin-top:3px">'+r.id+'</div></div>'+
+      '<div class="record-qty">'+r.qty+'<small>件</small></div></div>'+
+      '<div class="record-meta">'+tags+
+      '<span class="meta-tag">🕐 '+r.time+'</span>'+
+      (r.location?'<span class="meta-tag">📍 '+r.location+'</span>':'')+
+      (r.remark?'<span class="meta-tag">💬 '+r.remark+'</span>':'')+
+      '<span class="meta-tag">👤 '+r.user+'</span>'+
+      (r.synced?'<span class="meta-tag" style="color:#4caf50">☁️ 已同步</span>':'<span class="meta-tag" style="color:var(--text-muted)">📱 本機</span>')+
+      '</div>'+
+      (r.stampedPhoto?'<img class="record-thumb" src="'+r.stampedPhoto+'" loading="lazy">':r.originalPhoto?'<img class="record-thumb" src="'+r.originalPhoto+'" loading="lazy">':'')+
+      '</div>';
+  }).join('');
+}
+
+/* DETAIL */
+function showDetail(id){
+  const r=records.find(x=>x.id===id);if(!r)return;
+  document.getElementById('detailTitle').textContent=r.itemName;
+  const its=r.items||[{name:r.itemName,qty:r.qty}];
+  const itemRows=its.map((it,i)=>'<tr><td>品項 '+(i+1)+'</td><td>'+it.name+'　×'+it.qty+' 件</td></tr>').join('');
+  document.getElementById('detailContent').innerHTML=
+    (r.stampedPhoto?'<img class="detail-photo" src="'+r.stampedPhoto+'">':r.originalPhoto?'<img class="detail-photo" src="'+r.originalPhoto+'">':'')+
+    '<table class="detail-table">'+
+    '<tr><td>記錄編號</td><td>'+r.id+'</td></tr>'+
+    '<tr><td>記錄時間</td><td>'+r.time+'</td></tr>'+
+    '<tr><td>盤點人員</td><td>'+r.user+'</td></tr>'+
+    itemRows+
+    '<tr><td>存放位置</td><td>'+(r.location||'—')+'</td></tr>'+
+    '<tr><td>備　　註</td><td>'+(r.remark||'—')+'</td></tr>'+
+    '<tr><td>雲端狀態</td><td>'+(r.synced?'<span style="color:#4caf50">☁️ 已同步</span>':'📱 僅存本機')+'</td></tr>'+
+    '</table>'+
+    '<div class="detail-actions">'+
+    (r.stampedPhoto?'<button class="primary" onclick="dlPhoto(\''+id+'\')">⬇ 壓字照</button>':'')+
+    (r.originalPhoto?'<button onclick="dlOrig(\''+id+'\')">🖼 原始</button>':'')+
+    (!r.synced&&settings.scriptUrl?'<button onclick="reSync(\''+id+'\')" style="background:#e8f5e9;color:#2e7d32;border-color:#a5d6a7">☁️ 補傳</button>':'')+
+    '<button class="danger" onclick="deleteRecord(\''+id+'\')">🗑 刪除</button>'+
+    '</div>';
+  document.getElementById('detailOverlay').classList.add('open');
+}
+function closeDetail(e){
+  if(e&&e.target!==document.getElementById('detailOverlay'))return;
+  document.getElementById('detailOverlay').classList.remove('open');
+}
+function dlPhoto(id){const r=records.find(x=>x.id===id);if(!r||!r.stampedPhoto)return;const a=document.createElement('a');a.href=r.stampedPhoto;a.download=r.id+'_壓字.jpg';a.click();}
+function dlOrig(id){const r=records.find(x=>x.id===id);if(!r||!r.originalPhoto)return;const a=document.createElement('a');a.href=r.originalPhoto;a.download=r.id+'_原始.jpg';a.click();}
+async function reSync(id){
+  const r=records.find(x=>x.id===id);if(!r)return;
+  showToast('☁️ 補傳中…');
+  await syncToSheet(r);
+  renderList();document.getElementById('detailOverlay').classList.remove('open');
+}
+function deleteRecord(id){
+  if(!confirm('確定刪除此記錄？'))return;
+  records=records.filter(r=>r.id!==id);saveData();
+  document.getElementById('detailOverlay').classList.remove('open');
+  renderList();showToast('記錄已刪除');
+}
+
+/* EXPORT */
+function exportCSV(){
+  if(!records.length){showToast('尚無資料','warn');return;}
+  const hdr=['記錄編號','記錄時間','盤點人員','品項1名稱','品項1數量','品項2名稱','品項2數量','品項3名稱','品項3數量','存放位置','備註','雲端同步'];
+  const rows=records.map(r=>{
+    const its=r.items||[{name:r.itemName,qty:r.qty}];
+    return[r.id,r.time,r.user,its[0]?.name||'',its[0]?.qty||'',its[1]?.name||'',its[1]?.qty||'',its[2]?.name||'',its[2]?.qty||'',r.location||'',r.remark||'',r.synced?'是':'否'];
+  });
+  const csv='\uFEFF'+[hdr,...rows].map(row=>row.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const a=document.createElement('a');
+  const d=new Date();
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
+  a.download='倉庫盤點_'+d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0')+'.csv';
+  a.click();showToast('✅ CSV 已匯出','success');
+}
+function exportJSON(){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(records,null,2)],{type:'application/json'}));
+  a.download='倉庫盤點備份_'+Date.now()+'.json';a.click();showToast('✅ 備份完成','success');
+}
+function handleImport(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{const d=JSON.parse(e.target.result);if(!Array.isArray(d))throw 0;
+      if(confirm('匯入 '+d.length+' 筆記錄？')){records=[...d,...records];saveData();renderList();showToast('✅ 已匯入 '+d.length+' 筆','success');}
+    }catch(err){showToast('格式錯誤','warn');}
+  };
+  reader.readAsText(file);input.value='';
+}
+function clearAllData(){
+  if(!confirm('確定刪除所有記錄？'))return;
+  if(!confirm('再次確認，刪除後無法復原！'))return;
+  records=[];saveData();renderList();renderStats();showToast('已清除');
+}
+
+/* STATS */
+function renderStats(){
+  const today=new Date().toDateString();
+  const tc=records.filter(r=>new Date(r.timestamp).toDateString()===today).length;
+  const sc=records.filter(r=>r.synced).length;
+  document.getElementById('statsRow').innerHTML=
+    '<div class="stat-card"><div class="stat-num">'+records.length+'</div><div class="stat-label">總記錄筆數</div></div>'+
+    '<div class="stat-card"><div class="stat-num">'+tc+'</div><div class="stat-label">今日記錄</div></div>'+
+    '<div class="stat-card"><div class="stat-num">'+records.reduce((s,r)=>s+r.qty,0)+'</div><div class="stat-label">總盤點數量</div></div>'+
+    '<div class="stat-card"><div class="stat-num">'+sc+'</div><div class="stat-label">已雲端同步</div></div>';
+}
+
+/* TOAST */
+let toastTimer;
+function showToast(msg,type){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.className='toast show '+(type||'');
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),2400);
+}
+
+loadData();loadSettings();
 
 /* TABS */
 function switchTab(tab){
