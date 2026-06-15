@@ -9,356 +9,150 @@
 <meta name="theme-color" content="#111820">
 <title>倉庫盤點系統</title>
 <style>
-:root {
-  --bg:        #111820;
-  --bg-card:   #1a2535;
-  --bg-input:  #161f2d;
-  --bg-modal:  #1e2d42;
-  --accent:    #00d4a8;
-  --accent-dk: #00a882;
-  --warn:      #f5a623;
-  --danger:    #e05252;
-  --success:   #4ccc8a;
-  --text:      #dce8f5;
-  --text-2:    #7a96b4;
-  --text-3:    #3d5570;
-  --border:    #243349;
-  --radius:    14px;
-  --radius-sm: 9px;
-  --shadow:    0 4px 24px rgba(0,0,0,.45);
+:root{
+  --bg:#111820;--bg-card:#1a2535;--bg-input:#161f2d;--bg-modal:#1e2d42;
+  --accent:#00d4a8;--accent-dk:#00a882;--warn:#f5a623;--danger:#e05252;--success:#4ccc8a;
+  --text:#dce8f5;--text-2:#7a96b4;--text-3:#3d5570;--border:#243349;
+  --radius:14px;--radius-sm:9px;--shadow:0 4px 24px rgba(0,0,0,.45);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;overflow:hidden}
 body{background:var(--bg);color:var(--text);font-family:'Microsoft JhengHei','PingFang TC',sans-serif;display:flex;flex-direction:column}
-
-/* ── HEADER ── */
-.hdr{
-  background:var(--bg-card);
-  border-bottom:1px solid var(--border);
-  padding:13px 18px;
-  display:flex;align-items:center;justify-content:space-between;
-  flex-shrink:0;
-  position:relative;z-index:50;
-}
+.hdr{background:var(--bg-card);border-bottom:1px solid var(--border);padding:13px 18px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;z-index:50}
 .hdr-title{font-size:16px;font-weight:700;letter-spacing:.5px;color:var(--accent)}
 .hdr-sub{font-size:11px;color:var(--text-2);margin-top:1px}
 .hdr-right{display:flex;gap:8px}
-.hdr-btn{
-  background:var(--bg-input);border:1px solid var(--border);
-  color:var(--text);border-radius:var(--radius-sm);
-  padding:7px 13px;font-size:12px;cursor:pointer;
-  transition:background .15s;
-}
+.hdr-btn{background:var(--bg-input);border:1px solid var(--border);color:var(--text);border-radius:var(--radius-sm);padding:7px 13px;font-size:12px;cursor:pointer}
 .hdr-btn:active{background:var(--border)}
-
-/* ── TABS ── */
-.tabs{
-  display:flex;background:var(--bg-card);
-  border-bottom:1px solid var(--border);flex-shrink:0;
-}
-.tab{
-  flex:1;padding:11px 4px;text-align:center;
-  font-size:12px;color:var(--text-2);
-  border-bottom:2px solid transparent;
-  cursor:pointer;transition:all .15s;user-select:none;
-}
+.tabs{display:flex;background:var(--bg-card);border-bottom:1px solid var(--border);flex-shrink:0}
+.tab{flex:1;padding:11px 4px;text-align:center;font-size:12px;color:var(--text-2);border-bottom:2px solid transparent;cursor:pointer;transition:all .15s;user-select:none}
 .tab.active{color:var(--accent);border-bottom-color:var(--accent)}
-
-/* ── SCROLL CONTAINER ── */
-.page{display:none;flex:1;overflow-y:auto;padding:16px 14px 100px;-webkit-overflow-scrolling:touch}
+.page{display:none;flex:1;overflow-y:auto;padding:14px 14px 100px;-webkit-overflow-scrolling:touch}
 .page.active{display:block}
-
-/* ── SECTION CARD ── */
-.card{
-  background:var(--bg-card);border:1px solid var(--border);
-  border-radius:var(--radius);padding:14px;margin-bottom:12px;
-}
-.card-title{
-  font-size:11px;font-weight:700;color:var(--text-2);
-  letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;
-}
-
-/* ── PHOTO ZONE ── */
-.photo-zone{
-  background:var(--bg-input);border:2px dashed var(--border);
-  border-radius:var(--radius);
-  min-height:190px;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  cursor:pointer;position:relative;overflow:hidden;
-  transition:border-color .2s;margin-bottom:10px;
-}
-.photo-zone:active{border-color:var(--accent)}
-.photo-zone.has-img{border-style:solid;border-color:var(--accent)}
-.photo-zone img{width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0}
-.photo-placeholder{text-align:center;color:var(--text-3);pointer-events:none;z-index:1}
-.photo-placeholder .ico{font-size:40px;margin-bottom:6px}
-.photo-placeholder p{font-size:13px}
-.photo-actions{display:flex;gap:8px;margin-bottom:12px}
-.photo-btn{
-  flex:1;background:var(--bg-input);border:1px solid var(--border);
-  color:var(--text);border-radius:var(--radius-sm);
-  padding:10px 6px;font-size:12px;cursor:pointer;text-align:center;
-  transition:background .15s;
-}
-.photo-btn:active{background:var(--border)}
-input[type=file]{display:none}
-
-/* ── VOICE ZONE ── */
-.voice-row{display:flex;gap:10px;align-items:flex-start;margin-bottom:10px}
-.voice-btn{
-  width:52px;height:52px;border-radius:50%;
-  background:var(--bg-input);border:2px solid var(--border);
-  font-size:22px;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;
-  flex-shrink:0;transition:all .2s;
-}
-.voice-btn.recording{
-  background:rgba(224,82,82,.15);border-color:var(--danger);
-  animation:pulse 1s infinite;
-}
-@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(224,82,82,.4)}50%{box-shadow:0 0 0 8px rgba(224,82,82,0)}}
-.voice-transcript{
-  flex:1;min-height:52px;background:var(--bg-input);
-  border:1px solid var(--border);border-radius:var(--radius-sm);
-  padding:10px 12px;font-size:13px;color:var(--text-3);
-  cursor:pointer;line-height:1.5;
-  transition:border-color .15s;
-}
-.voice-transcript.has-text{color:var(--text);border-color:var(--border)}
-.voice-transcript:active{border-color:var(--accent)}
-.voice-status{font-size:11px;color:var(--text-2);margin-top:6px;min-height:16px}
-
-/* ── INPUTS ── */
-.field{margin-bottom:10px}
-.field label{
-  display:block;font-size:11px;font-weight:700;
-  color:var(--text-2);letter-spacing:.5px;
-  margin-bottom:6px;
-}
-.field input,.field select,.field textarea{
-  width:100%;background:var(--bg-input);border:1px solid var(--border);
-  border-radius:var(--radius-sm);color:var(--text);
-  padding:11px 13px;font-size:14px;
-  font-family:inherit;outline:none;
-  transition:border-color .15s;
-  -webkit-appearance:none;appearance:none;
-}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:12px}
+.card-title{font-size:11px;font-weight:700;color:var(--text-2);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px}
+/* ITEM BLOCK */
+.item-block{background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin-bottom:10px}
+.item-block:last-child{margin-bottom:0}
+.item-label{font-size:11px;font-weight:800;color:var(--accent);letter-spacing:1px;margin-bottom:10px}
+.item-label span{background:rgba(0,212,168,.15);border-radius:20px;padding:2px 9px}
+.mini-photo{width:100%;height:85px;background:var(--bg);border:1.5px dashed var(--border);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;overflow:hidden;margin-bottom:7px;transition:border-color .2s}
+.mini-photo:active{border-color:var(--accent)}
+.mini-photo.has-img{border-style:solid;border-color:var(--accent)}
+.mini-photo img{width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0}
+.mini-photo-ph{font-size:11px;color:var(--text-3);text-align:center;pointer-events:none;z-index:1}
+.mini-photo-ph .ico{font-size:20px;display:block;margin-bottom:2px}
+.mini-actions{display:flex;gap:5px;margin-bottom:8px}
+.mini-btn{flex:1;background:var(--bg);border:1px solid var(--border);color:var(--text-2);border-radius:var(--radius-sm);padding:5px 2px;font-size:11px;cursor:pointer;text-align:center}
+.mini-btn:active{background:var(--border)}
+.voice-row{display:flex;gap:8px;align-items:flex-start;margin-bottom:8px}
+.voice-btn{width:42px;height:42px;border-radius:50%;background:var(--bg);border:2px solid var(--border);font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s}
+.voice-btn.recording{background:rgba(224,82,82,.15);border-color:var(--danger);animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(224,82,82,.4)}50%{box-shadow:0 0 0 6px rgba(224,82,82,0)}}
+.voice-tx{flex:1;min-height:42px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;font-size:12px;color:var(--text-3);cursor:pointer;line-height:1.5}
+.voice-tx.has-text{color:var(--text)}
+.voice-tx:active{border-color:var(--accent)}
+.field{margin-bottom:8px}
+.field label{display:block;font-size:10px;font-weight:700;color:var(--text-2);letter-spacing:.5px;margin-bottom:4px}
+.field input,.field select,.field textarea{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:9px 11px;font-size:13px;font-family:inherit;outline:none;transition:border-color .15s;-webkit-appearance:none;appearance:none}
 .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent)}
-.field textarea{resize:none;height:64px;line-height:1.5}
-.field select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237a96b4' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 13px center;padding-right:34px}
+.field textarea{resize:none;height:54px;line-height:1.5}
+.field select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237a96b4' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 11px center;padding-right:30px}
 .field select option{background:#1a2535}
-
-/* 自訂位置輸入 */
-#customLocationWrap{display:none;margin-top:8px}
-
-/* ── QTY ROW ── */
-.qty-row{display:flex;gap:10px;align-items:flex-end}
-.qty-row .field{flex:1}
-.qty-stepper{
-  display:flex;align-items:center;gap:0;
-  border:1px solid var(--border);border-radius:var(--radius-sm);
-  overflow:hidden;background:var(--bg-input);margin-bottom:10px;
-}
-.qty-stepper button{
-  width:44px;height:44px;background:transparent;
-  border:none;color:var(--accent);font-size:22px;
-  cursor:pointer;display:flex;align-items:center;justify-content:center;
-  transition:background .15s;
-}
+#customLocationWrap{display:none;margin-top:6px}
+.irow{display:flex;gap:8px}
+.irow .field{flex:1}
+.qty-stepper{display:flex;align-items:center;border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;background:var(--bg);margin-bottom:8px}
+.qty-stepper button{width:36px;height:36px;background:transparent;border:none;color:var(--accent);font-size:19px;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .qty-stepper button:active{background:var(--border)}
-.qty-stepper input{
-  flex:1;border:none;background:transparent;
-  text-align:center;color:var(--text);font-size:18px;font-weight:700;
-  padding:0;outline:none;
-}
-
-/* ── SUBMIT BTN ── */
-.submit-btn{
-  width:100%;padding:15px;
-  background:linear-gradient(135deg,var(--accent),var(--accent-dk));
-  border:none;border-radius:var(--radius);
-  color:#0a1520;font-size:15px;font-weight:800;
-  cursor:pointer;letter-spacing:.5px;
-  transition:opacity .15s,transform .1s;
-  margin-top:4px;
-}
+.qty-stepper input{flex:1;border:none;background:transparent;text-align:center;color:var(--text);font-size:15px;font-weight:700;padding:0;outline:none}
+.submit-btn{width:100%;padding:15px;background:linear-gradient(135deg,var(--accent),var(--accent-dk));border:none;border-radius:var(--radius);color:#0a1520;font-size:15px;font-weight:800;cursor:pointer;letter-spacing:.5px;transition:opacity .15s,transform .1s;margin-top:4px}
 .submit-btn:active{opacity:.85;transform:scale(.98)}
 .submit-btn:disabled{opacity:.4;cursor:not-allowed}
-
-/* ── SUCCESS MODAL ── */
-.modal-overlay{
-  display:none;position:fixed;inset:0;z-index:200;
-  background:rgba(8,14,22,.8);backdrop-filter:blur(6px);
-  align-items:center;justify-content:center;padding:20px;
-}
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;z-index:200;background:rgba(8,14,22,.8);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:20px}
 .modal-overlay.show{display:flex}
-.modal-box{
-  background:var(--bg-modal);border:1px solid var(--border);
-  border-radius:20px;padding:28px 22px;
-  width:100%;max-width:380px;
-  box-shadow:var(--shadow);
-  animation:popIn .22s cubic-bezier(.34,1.56,.64,1);
-}
+.modal-box{background:var(--bg-modal);border:1px solid var(--border);border-radius:20px;padding:24px 20px;width:100%;max-width:400px;box-shadow:var(--shadow);animation:popIn .22s cubic-bezier(.34,1.56,.64,1)}
 @keyframes popIn{from{opacity:0;transform:scale(.88)}to{opacity:1;transform:scale(1)}}
-.modal-icon{font-size:52px;text-align:center;margin-bottom:10px}
-.modal-title{font-size:18px;font-weight:800;color:var(--success);text-align:center;margin-bottom:4px}
-.modal-id{font-size:11px;color:var(--text-2);text-align:center;margin-bottom:16px}
-.modal-body{
-  background:var(--bg-input);border-radius:var(--radius-sm);
-  padding:14px;margin-bottom:18px;
-}
-.modal-body .row{
-  display:flex;align-items:flex-start;gap:8px;
-  padding:5px 0;border-bottom:1px solid var(--border);
-  font-size:13px;line-height:1.4;
-}
-.modal-body .row:last-child{border-bottom:none}
-.modal-body .row .lbl{color:var(--text-2);flex-shrink:0;width:36px}
-.modal-body .row .val{color:var(--text)}
-.modal-sync{
-  font-size:12px;text-align:center;
-  color:var(--text-2);margin-bottom:18px;
-}
-.modal-confirm-btn{
-  width:100%;padding:14px;
-  background:linear-gradient(135deg,var(--accent),var(--accent-dk));
-  border:none;border-radius:var(--radius);
-  color:#0a1520;font-size:15px;font-weight:800;
-  cursor:pointer;letter-spacing:.5px;
-}
+.modal-icon{font-size:48px;text-align:center;margin-bottom:8px}
+.modal-title{font-size:17px;font-weight:800;color:var(--success);text-align:center;margin-bottom:4px}
+.modal-id{font-size:11px;color:var(--text-2);text-align:center;margin-bottom:14px}
+.modal-body{background:var(--bg-input);border-radius:var(--radius-sm);padding:12px;margin-bottom:16px;max-height:240px;overflow-y:auto}
+.modal-isum{background:var(--bg);border-radius:var(--radius-sm);padding:8px 10px;margin-bottom:6px;font-size:12px}
+.modal-isum:last-child{margin-bottom:0}
+.modal-isum .iname{font-weight:700;color:var(--text);margin-bottom:2px}
+.modal-isum .imeta{color:var(--text-2)}
+.modal-row{display:flex;gap:8px;padding:5px 0;border-top:1px solid var(--border);font-size:12px;margin-top:6px}
+.modal-row .lbl{color:var(--text-2);flex-shrink:0;width:40px}
+.modal-row .val{color:var(--text)}
+.modal-confirm-btn{width:100%;padding:13px;background:linear-gradient(135deg,var(--accent),var(--accent-dk));border:none;border-radius:var(--radius);color:#0a1520;font-size:14px;font-weight:800;cursor:pointer}
 .modal-confirm-btn:active{opacity:.85}
-
-/* ── RECORD LIST ── */
+/* LIST */
 .search-wrap{position:relative;margin-bottom:12px}
-.search-wrap input{
-  width:100%;background:var(--bg-card);border:1px solid var(--border);
-  border-radius:var(--radius-sm);color:var(--text);
-  padding:10px 13px 10px 36px;font-size:13px;font-family:inherit;
-  outline:none;-webkit-appearance:none;
-}
+.search-wrap input{width:100%;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:10px 13px 10px 36px;font-size:13px;font-family:inherit;outline:none;-webkit-appearance:none}
 .search-wrap input:focus{border-color:var(--accent)}
 .search-ico{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:15px;color:var(--text-3)}
-.rec-item{
-  background:var(--bg-card);border:1px solid var(--border);
-  border-radius:var(--radius);padding:13px;margin-bottom:10px;
-  cursor:pointer;transition:border-color .15s;
-}
+.rec-item{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:13px;margin-bottom:10px;cursor:pointer;transition:border-color .15s}
 .rec-item:active{border-color:var(--accent)}
 .rec-top{display:flex;align-items:flex-start;gap:10px;margin-bottom:8px}
-.rec-thumb{
-  width:54px;height:54px;border-radius:8px;object-fit:cover;flex-shrink:0;
-  background:var(--bg-input);display:flex;align-items:center;justify-content:center;
-  font-size:20px;color:var(--text-3);
-}
-.rec-thumb img{width:100%;height:100%;object-fit:cover;border-radius:8px}
+.rec-thumbs{display:flex;gap:4px;flex-shrink:0}
+.rec-thumb{width:42px;height:42px;border-radius:7px;background:var(--bg-input);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--text-3);overflow:hidden}
+.rec-thumb img{width:100%;height:100%;object-fit:cover}
 .rec-meta{flex:1;min-width:0}
-.rec-name{font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px}
-.rec-detail{font-size:12px;color:var(--text-2)}
+.rec-name{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}
+.rec-detail{font-size:11px;color:var(--text-2)}
 .rec-badges{display:flex;gap:6px;flex-wrap:wrap}
-.badge{
-  padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700;
-}
+.badge{padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700}
 .badge-loc{background:rgba(0,212,168,.12);color:var(--accent)}
 .badge-qty{background:rgba(245,166,35,.12);color:var(--warn)}
 .badge-time{background:rgba(122,150,180,.1);color:var(--text-2)}
 .empty-state{text-align:center;padding:50px 20px;color:var(--text-3)}
 .empty-state .ico{font-size:44px;margin-bottom:10px}
 .empty-state p{font-size:14px}
-
-/* ── DETAIL MODAL ── */
-.detail-overlay{
-  display:none;position:fixed;inset:0;z-index:200;
-  background:rgba(8,14,22,.85);backdrop-filter:blur(6px);
-  flex-direction:column;
-}
+/* DETAIL */
+.detail-overlay{display:none;position:fixed;inset:0;z-index:200;background:rgba(8,14,22,.85);backdrop-filter:blur(6px);flex-direction:column}
 .detail-overlay.show{display:flex}
-.detail-hdr{
-  background:var(--bg-card);border-bottom:1px solid var(--border);
-  padding:14px 18px;display:flex;align-items:center;gap:12px;flex-shrink:0;
-}
-.detail-hdr button{
-  background:transparent;border:none;color:var(--text);
-  font-size:22px;cursor:pointer;padding:0;line-height:1;
-}
-.detail-hdr .title{font-size:15px;font-weight:700;flex:1}
+.detail-hdr{background:var(--bg-card);border-bottom:1px solid var(--border);padding:14px 18px;display:flex;align-items:center;gap:12px;flex-shrink:0}
+.detail-hdr button{background:transparent;border:none;color:var(--text);font-size:22px;cursor:pointer;padding:0;line-height:1}
+.detail-hdr .title{font-size:14px;font-weight:700;flex:1}
 .detail-body{flex:1;overflow-y:auto;padding:16px 14px 40px}
-.detail-photo{
-  width:100%;border-radius:var(--radius);margin-bottom:14px;object-fit:cover;
-}
 .detail-info{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:12px}
-.detail-row{
-  display:flex;padding:11px 14px;border-bottom:1px solid var(--border);font-size:13px;
-}
+.detail-row{display:flex;padding:10px 14px;border-bottom:1px solid var(--border);font-size:13px}
 .detail-row:last-child{border-bottom:none}
 .detail-row .k{color:var(--text-2);width:60px;flex-shrink:0}
 .detail-row .v{color:var(--text);flex:1}
-.detail-actions{display:flex;gap:10px}
-.detail-dl-btn{
-  flex:1;padding:12px;border-radius:var(--radius-sm);
-  border:1px solid var(--border);background:var(--bg-card);
-  color:var(--text);font-size:12px;cursor:pointer;text-align:center;
-}
-.detail-dl-btn:active{background:var(--border)}
-.detail-del-btn{
-  padding:12px 16px;border-radius:var(--radius-sm);
-  border:1px solid var(--danger);background:transparent;
-  color:var(--danger);font-size:12px;cursor:pointer;
-}
-
-/* ── SETTINGS ── */
-.setting-row{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:12px 0;border-bottom:1px solid var(--border);
-}
+.detail-item{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:10px}
+.detail-item-lbl{font-size:11px;font-weight:800;color:var(--accent);margin-bottom:8px}
+.detail-photo{width:100%;border-radius:var(--radius-sm);margin-bottom:8px;object-fit:cover}
+.detail-acts{display:flex;gap:8px;margin-top:4px}
+.det-btn{flex:1;padding:9px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg-card);color:var(--text);font-size:12px;cursor:pointer;text-align:center}
+.det-btn:active{background:var(--border)}
+.det-del{padding:9px 14px;border-radius:var(--radius-sm);border:1px solid var(--danger);background:transparent;color:var(--danger);font-size:12px;cursor:pointer}
+/* SETTINGS */
+.setting-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)}
 .setting-row:last-child{border-bottom:none}
 .setting-row label{font-size:13px;color:var(--text-2)}
-.setting-row input{
-  background:var(--bg-input);border:1px solid var(--border);
-  border-radius:var(--radius-sm);color:var(--text);
-  padding:8px 11px;font-size:13px;font-family:inherit;
-  outline:none;width:130px;text-align:right;
-}
-.setting-row input:focus{border-color:var(--accent)}
+.setting-row input{background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 11px;font-size:13px;font-family:inherit;outline:none;width:130px;text-align:right}
 .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
-.stat-card{
-  background:var(--bg-input);border-radius:var(--radius-sm);
-  padding:14px;text-align:center;
-}
+.stat-card{background:var(--bg-input);border-radius:var(--radius-sm);padding:14px;text-align:center}
 .stat-num{font-size:26px;font-weight:800;color:var(--accent)}
 .stat-lbl{font-size:11px;color:var(--text-2);margin-top:3px}
-.export-btn{
-  width:100%;padding:13px;background:var(--bg-input);
-  border:1px solid var(--border);border-radius:var(--radius-sm);
-  color:var(--text);font-size:13px;cursor:pointer;
-  margin-top:8px;
-}
+.export-btn{width:100%;padding:13px;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:13px;cursor:pointer;margin-top:8px}
 .export-btn:active{background:var(--border)}
-
-/* ── TOAST ── */
-.toast{
-  position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(20px);
-  background:var(--bg-card);border:1px solid var(--border);
-  border-radius:30px;padding:10px 20px;font-size:13px;
-  z-index:300;opacity:0;transition:all .25s;pointer-events:none;
-  white-space:nowrap;max-width:85vw;
-}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--bg-card);border:1px solid var(--border);border-radius:30px;padding:10px 20px;font-size:13px;z-index:300;opacity:0;transition:all .25s;pointer-events:none;white-space:nowrap;max-width:85vw}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .toast.ok{border-color:var(--success);color:var(--success)}
 .toast.warn{border-color:var(--warn);color:var(--warn)}
 .toast.err{border-color:var(--danger);color:var(--danger)}
-
-/* ── BOTTOM NAV SAFE AREA ── */
-@supports (padding-bottom: env(safe-area-inset-bottom)){
-  .page{padding-bottom:calc(80px + env(safe-area-inset-bottom))}
-}
+input[type=file]{display:none}
+@supports(padding-bottom:env(safe-area-inset-bottom)){.page{padding-bottom:calc(100px + env(safe-area-inset-bottom))}}
 </style>
 </head>
 <body>
 
-<!-- HEADER -->
 <div class="hdr">
   <div>
-    <div class="hdr-title">📦 倉庫盤點系統</div>
+    <div class="hdr-title">&#x1F4E6; 倉庫盤點系統</div>
     <div class="hdr-sub" id="hdrUser">盤點人：載入中</div>
   </div>
   <div class="hdr-right">
@@ -366,64 +160,84 @@ input[type=file]{display:none}
   </div>
 </div>
 
-<!-- TABS -->
 <div class="tabs">
-  <div class="tab active" onclick="switchTab('record',this)">📷 新增紀錄</div>
-  <div class="tab" onclick="switchTab('list',this)">📋 紀錄列表</div>
-  <div class="tab" onclick="switchTab('settings',this)">⚙️ 設定</div>
+  <div class="tab active" onclick="switchTab('record',this)">&#x1F4F7; 新增紀錄</div>
+  <div class="tab" onclick="switchTab('list',this)">&#x1F4CB; 紀錄列表</div>
+  <div class="tab" onclick="switchTab('settings',this)">&#x2699;&#xFE0F; 設定</div>
 </div>
 
-<!-- ══════ PAGE: 新增紀錄 ══════ -->
 <div class="page active" id="page-record">
-
-  <!-- 拍照 -->
   <div class="card">
-    <div class="card-title">拍照</div>
-    <div class="photo-zone" id="photoZone" onclick="document.getElementById('camInput').click()">
-      <div class="photo-placeholder" id="photoPlaceholder">
-        <div class="ico">📷</div>
-        <p>點擊拍照</p>
+    <div class="card-title">品項資訊（3件一批）</div>
+
+    <div class="item-block" id="item-0">
+      <div class="item-label"><span>品項 1</span></div>
+      <div class="mini-photo" id="photoZone-0" onclick="document.getElementById('cam-0').click()">
+        <div class="mini-photo-ph" id="photoPh-0"><span class="ico">&#x1F4F7;</span>點擊拍照</div>
       </div>
-    </div>
-    <div class="photo-actions">
-      <button class="photo-btn" onclick="document.getElementById('camInput').click()">📷 拍照</button>
-      <button class="photo-btn" onclick="document.getElementById('gallInput').click()">🖼 相簿</button>
-      <button class="photo-btn" onclick="clearPhoto()">✕ 清除</button>
-    </div>
-    <input type="file" id="camInput" accept="image/*" capture="environment" onchange="handlePhoto(this)">
-    <input type="file" id="gallInput" accept="image/*" onchange="handlePhoto(this)">
-  </div>
-
-  <!-- 語音輸入 -->
-  <div class="card">
-    <div class="card-title">品項語音輸入</div>
-    <div class="voice-row">
-      <button class="voice-btn" id="voiceBtn" onclick="toggleVoice()">🎙</button>
-      <div class="voice-transcript" id="voiceTranscript" onclick="editVoice()">點右方麥克風開始說話，例如：「電腦主機五台」</div>
-    </div>
-    <div class="voice-status" id="voiceStatus"></div>
-  </div>
-
-  <!-- 品項資訊 -->
-  <div class="card">
-    <div class="card-title">品項資訊</div>
-
-    <div class="field">
-      <label>品項名稱 *</label>
-      <input type="text" id="itemName" placeholder="例：電腦主機" autocomplete="off">
-    </div>
-
-    <div class="field">
-      <label>數量 *</label>
-      <div class="qty-stepper">
-        <button onclick="stepQty(-1)">−</button>
-        <input type="number" id="qty" value="1" min="0">
-        <button onclick="stepQty(1)">＋</button>
+      <div class="mini-actions">
+        <button class="mini-btn" onclick="document.getElementById('cam-0').click()">&#x1F4F7; 拍照</button>
+        <button class="mini-btn" onclick="document.getElementById('gall-0').click()">&#x1F5BC; 相簿</button>
+        <button class="mini-btn" onclick="clearPhoto(0)">&#x2715; 清除</button>
+      </div>
+      <input type="file" id="cam-0" accept="image/*" capture="environment" onchange="handlePhoto(this,0)">
+      <input type="file" id="gall-0" accept="image/*" onchange="handlePhoto(this,0)">
+      <div class="voice-row">
+        <button class="voice-btn" id="vbtn-0" onclick="toggleVoice(0)">&#x1F399;</button>
+        <div class="voice-tx" id="vtx-0" onclick="editVoice(0)">語音輸入品項1…</div>
+      </div>
+      <div class="irow">
+        <div class="field" style="flex:2"><label>品項名稱</label><input type="text" id="name-0" placeholder="例：電腦主機" autocomplete="off"></div>
+        <div class="field" style="flex:1"><label>數量</label><div class="qty-stepper"><button onclick="stepQty(0,-1)">&#x2212;</button><input type="number" id="qty-0" value="1" min="0"><button onclick="stepQty(0,1)">&#xFF0B;</button></div></div>
       </div>
     </div>
 
-    <div class="field">
-      <label>存放位置 *</label>
+    <div class="item-block" id="item-1">
+      <div class="item-label"><span>品項 2</span></div>
+      <div class="mini-photo" id="photoZone-1" onclick="document.getElementById('cam-1').click()">
+        <div class="mini-photo-ph" id="photoPh-1"><span class="ico">&#x1F4F7;</span>點擊拍照</div>
+      </div>
+      <div class="mini-actions">
+        <button class="mini-btn" onclick="document.getElementById('cam-1').click()">&#x1F4F7; 拍照</button>
+        <button class="mini-btn" onclick="document.getElementById('gall-1').click()">&#x1F5BC; 相簿</button>
+        <button class="mini-btn" onclick="clearPhoto(1)">&#x2715; 清除</button>
+      </div>
+      <input type="file" id="cam-1" accept="image/*" capture="environment" onchange="handlePhoto(this,1)">
+      <input type="file" id="gall-1" accept="image/*" onchange="handlePhoto(this,1)">
+      <div class="voice-row">
+        <button class="voice-btn" id="vbtn-1" onclick="toggleVoice(1)">&#x1F399;</button>
+        <div class="voice-tx" id="vtx-1" onclick="editVoice(1)">語音輸入品項2…</div>
+      </div>
+      <div class="irow">
+        <div class="field" style="flex:2"><label>品項名稱</label><input type="text" id="name-1" placeholder="例：螢幕" autocomplete="off"></div>
+        <div class="field" style="flex:1"><label>數量</label><div class="qty-stepper"><button onclick="stepQty(1,-1)">&#x2212;</button><input type="number" id="qty-1" value="1" min="0"><button onclick="stepQty(1,1)">&#xFF0B;</button></div></div>
+      </div>
+    </div>
+
+    <div class="item-block" id="item-2">
+      <div class="item-label"><span>品項 3</span></div>
+      <div class="mini-photo" id="photoZone-2" onclick="document.getElementById('cam-2').click()">
+        <div class="mini-photo-ph" id="photoPh-2"><span class="ico">&#x1F4F7;</span>點擊拍照</div>
+      </div>
+      <div class="mini-actions">
+        <button class="mini-btn" onclick="document.getElementById('cam-2').click()">&#x1F4F7; 拍照</button>
+        <button class="mini-btn" onclick="document.getElementById('gall-2').click()">&#x1F5BC; 相簿</button>
+        <button class="mini-btn" onclick="clearPhoto(2)">&#x2715; 清除</button>
+      </div>
+      <input type="file" id="cam-2" accept="image/*" capture="environment" onchange="handlePhoto(this,2)">
+      <input type="file" id="gall-2" accept="image/*" onchange="handlePhoto(this,2)">
+      <div class="voice-row">
+        <button class="voice-btn" id="vbtn-2" onclick="toggleVoice(2)">&#x1F399;</button>
+        <div class="voice-tx" id="vtx-2" onclick="editVoice(2)">語音輸入品項3…</div>
+      </div>
+      <div class="irow">
+        <div class="field" style="flex:2"><label>品項名稱</label><input type="text" id="name-2" placeholder="例：交換器" autocomplete="off"></div>
+        <div class="field" style="flex:1"><label>數量</label><div class="qty-stepper"><button onclick="stepQty(2,-1)">&#x2212;</button><input type="number" id="qty-2" value="1" min="0"><button onclick="stepQty(2,1)">&#xFF0B;</button></div></div>
+      </div>
+    </div>
+
+    <div class="field" style="margin-top:12px">
+      <label>存放位置 *（共用）</label>
       <select id="locationSelect" onchange="onLocationChange()">
         <option value="">— 選擇位置 —</option>
         <option value="三號-1樓">三號-1樓</option>
@@ -435,29 +249,25 @@ input[type=file]{display:none}
         <option value="__other__">其他（手動輸入）</option>
       </select>
       <div id="customLocationWrap">
-        <input type="text" id="customLocation" placeholder="請輸入自訂位置…" autocomplete="off">
+        <input type="text" id="customLocation" placeholder="請輸入自訂位置…" autocomplete="off" style="margin-top:6px">
       </div>
     </div>
-
     <div class="field">
-      <label>備註</label>
+      <label>備註（共用）</label>
       <textarea id="remark" placeholder="例：待入庫、損壞待處理…"></textarea>
     </div>
   </div>
-
-  <button class="submit-btn" id="submitBtn" onclick="submitRecord()">✓ 送出紀錄</button>
+  <button class="submit-btn" id="submitBtn" onclick="submitRecord()">&#x2713; 送出紀錄</button>
 </div>
 
-<!-- ══════ PAGE: 紀錄列表 ══════ -->
 <div class="page" id="page-list">
   <div class="search-wrap">
-    <span class="search-ico">🔍</span>
+    <span class="search-ico">&#x1F50D;</span>
     <input type="text" id="searchInput" placeholder="搜尋品項、位置…" oninput="renderList()">
   </div>
   <div id="recList"></div>
 </div>
 
-<!-- ══════ PAGE: 設定 ══════ -->
 <div class="page" id="page-settings">
   <div class="card">
     <div class="card-title">帳號設定</div>
@@ -472,487 +282,358 @@ input[type=file]{display:none}
   </div>
   <div class="card">
     <div class="card-title">資料管理</div>
-    <button class="export-btn" onclick="exportCSV()">📊 匯出 CSV（Excel）</button>
-    <button class="export-btn" onclick="exportJSON()">💾 備份 JSON</button>
-    <button class="export-btn" onclick="importJSON()">📥 匯入 JSON 備份</button>
-    <button class="export-btn" style="color:var(--danger);border-color:var(--danger)" onclick="clearAll()">🗑 清除所有記錄</button>
+    <button class="export-btn" onclick="exportCSV()">&#x1F4CA; 匯出 CSV（Excel）</button>
+    <button class="export-btn" onclick="exportJSON()">&#x1F4BE; 備份 JSON</button>
+    <button class="export-btn" onclick="importJSON()">&#x1F4E5; 匯入 JSON 備份</button>
+    <button class="export-btn" style="color:var(--danger);border-color:var(--danger)" onclick="clearAll()">&#x1F5D1; 清除所有記錄</button>
   </div>
 </div>
 
-<!-- ══════ SUCCESS MODAL ══════ -->
 <div class="modal-overlay" id="successOverlay">
   <div class="modal-box">
-    <div class="modal-icon">✅</div>
+    <div class="modal-icon">&#x2705;</div>
     <div class="modal-title">紀錄已儲存</div>
     <div class="modal-id" id="successId"></div>
     <div class="modal-body" id="successBody"></div>
-    <div class="modal-sync" id="successSync"></div>
     <button class="modal-confirm-btn" onclick="confirmSuccess()">確認，繼續下一筆</button>
   </div>
 </div>
 
-<!-- ══════ DETAIL MODAL ══════ -->
 <div class="detail-overlay" id="detailOverlay">
   <div class="detail-hdr">
-    <button onclick="closeDetail()">←</button>
+    <button onclick="closeDetail()">&#x2190;</button>
     <div class="title" id="detailTitle">紀錄詳情</div>
-    <button onclick="closeDetail()">✕</button>
+    <button onclick="closeDetail()">&#x2715;</button>
   </div>
   <div class="detail-body" id="detailBody"></div>
 </div>
 
-<!-- TOAST -->
 <div class="toast" id="toast"></div>
 
 <script>
-/* ══════════════════════════════
-   STATE & STORAGE
-══════════════════════════════ */
-let records = JSON.parse(localStorage.getItem('wh_records') || '[]');
-let currentUser = localStorage.getItem('wh_user') || 'Eric';
-let photoDataURL = null;
-let recognition = null;
-let isRecording = false;
-let currentDetailId = null;
+let records=JSON.parse(localStorage.getItem('wh_records')||'[]');
+let currentUser=localStorage.getItem('wh_user')||'Eric';
+let photoData=[null,null,null];
+let recs=[null,null,null];
+let isRec=[false,false,false];
 
-function save(){ localStorage.setItem('wh_records', JSON.stringify(records)) }
+function save(){localStorage.setItem('wh_records',JSON.stringify(records))}
 
-/* ══════════════════════════════
-   INIT
-══════════════════════════════ */
 function init(){
-  document.getElementById('hdrUser').textContent = '盤點人：' + currentUser;
-  document.getElementById('userName').value = currentUser;
-  initVoice();
-  renderList();
-  renderStats();
+  document.getElementById('hdrUser').textContent='盤點人：'+currentUser;
+  document.getElementById('userName').value=currentUser;
+  for(let i=0;i<3;i++) initVoice(i);
+  renderList();renderStats();
 }
 
-/* ══════════════════════════════
-   TABS
-══════════════════════════════ */
-function switchTab(name, el){
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.getElementById('page-' + name).classList.add('active');
-  if(el) el.classList.add('active');
-  if(name==='list') renderList();
-  if(name==='settings'){ renderStats(); document.getElementById('userName').value=currentUser; }
+function switchTab(name,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  if(el)el.classList.add('active');
+  if(name==='list')renderList();
+  if(name==='settings'){renderStats();document.getElementById('userName').value=currentUser;}
 }
 
-/* ══════════════════════════════
-   PHOTO
-══════════════════════════════ */
-function handlePhoto(input){
-  const file = input.files[0];
-  if(!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    photoDataURL = e.target.result;
-    const zone = document.getElementById('photoZone');
-    const ph = document.getElementById('photoPlaceholder');
-    let img = zone.querySelector('img');
-    if(!img){ img = document.createElement('img'); zone.appendChild(img); }
-    img.src = photoDataURL;
-    zone.classList.add('has-img');
-    ph.style.display = 'none';
-    showToast('照片已載入', 'ok');
+function handlePhoto(input,idx){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    photoData[idx]=e.target.result;
+    const zone=document.getElementById('photoZone-'+idx);
+    const ph=document.getElementById('photoPh-'+idx);
+    let img=zone.querySelector('img');
+    if(!img){img=document.createElement('img');zone.appendChild(img);}
+    img.src=photoData[idx];
+    zone.classList.add('has-img');ph.style.display='none';
+    showToast('品項'+(idx+1)+'照片已載入','ok');
   };
-  reader.readAsDataURL(file);
-  input.value = '';
+  reader.readAsDataURL(file);input.value='';
 }
-function clearPhoto(){
-  photoDataURL = null;
-  const zone = document.getElementById('photoZone');
-  const img = zone.querySelector('img');
-  if(img) img.remove();
+function clearPhoto(idx){
+  photoData[idx]=null;
+  const zone=document.getElementById('photoZone-'+idx);
+  const img=zone.querySelector('img');if(img)img.remove();
   zone.classList.remove('has-img');
-  document.getElementById('photoPlaceholder').style.display = '';
+  document.getElementById('photoPh-'+idx).style.display='';
 }
 
-/* ══════════════════════════════
-   VOICE
-══════════════════════════════ */
-function initVoice(){
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if(!SR) return;
-  recognition = new SR();
-  recognition.lang = 'zh-TW';
-  recognition.interimResults = true;
-  recognition.maxAlternatives = 1;
-  let finalText = '';
-  recognition.onresult = e => {
-    let interim = '', final = '';
-    for(let i = e.resultIndex; i < e.results.length; i++){
-      if(e.results[i].isFinal) final += e.results[i][0].transcript;
-      else interim += e.results[i][0].transcript;
+function initVoice(idx){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return;
+  const r=new SR();r.lang='zh-TW';r.interimResults=true;r.maxAlternatives=1;
+  let finalText='';
+  r.onresult=e=>{
+    let interim='',final='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      if(e.results[i].isFinal)final+=e.results[i][0].transcript;
+      else interim+=e.results[i][0].transcript;
     }
-    if(final) finalText += final;
-    const txt = finalText + interim;
-    document.getElementById('voiceTranscript').textContent = txt || '聆聽中…';
-    document.getElementById('voiceTranscript').classList.toggle('has-text', !!txt);
-    if(final) parseVoiceInput(finalText);
+    if(final)finalText+=final;
+    const txt=finalText+interim;
+    const tx=document.getElementById('vtx-'+idx);
+    tx.textContent=txt||'聆聽中…';tx.classList.toggle('has-text',!!txt);
+    if(final)parseVoice(idx,finalText);
   };
-  recognition.onerror = e => {
-    setVoiceIdle();
-    showToast('語音失敗：' + e.error, 'warn');
-  };
-  recognition.onend = () => setVoiceIdle();
-  recognition.onstart = () => { finalText = ''; };
+  r.onerror=e=>{setVoiceIdle(idx);showToast('語音失敗：'+e.error,'warn');};
+  r.onend=()=>setVoiceIdle(idx);
+  r.onstart=()=>{finalText='';};
+  recs[idx]=r;
 }
-
-function toggleVoice(){
-  if(!recognition){ showToast('此瀏覽器不支援語音辨識', 'warn'); return; }
-  if(isRecording){
-    recognition.stop(); setVoiceIdle();
-  } else {
-    recognition.start();
-    isRecording = true;
-    document.getElementById('voiceBtn').classList.add('recording');
-    document.getElementById('voiceBtn').textContent = '⏹';
-    document.getElementById('voiceStatus').textContent = '🔴 錄音中… 說完後自動停止';
-    document.getElementById('voiceTranscript').textContent = '聆聽中…';
-    document.getElementById('voiceTranscript').classList.remove('has-text');
+function toggleVoice(idx){
+  if(!recs[idx]){showToast('不支援語音辨識','warn');return;}
+  if(isRec[idx]){recs[idx].stop();setVoiceIdle(idx);}
+  else{
+    recs[idx].start();isRec[idx]=true;
+    document.getElementById('vbtn-'+idx).classList.add('recording');
+    document.getElementById('vbtn-'+idx).textContent='&#x23F9;';
+    document.getElementById('vtx-'+idx).textContent='聆聽中…';
+    document.getElementById('vtx-'+idx).classList.remove('has-text');
   }
 }
-function setVoiceIdle(){
-  isRecording = false;
-  document.getElementById('voiceBtn').classList.remove('recording');
-  document.getElementById('voiceBtn').textContent = '🎙';
-  document.getElementById('voiceStatus').textContent = '';
+function setVoiceIdle(idx){
+  isRec[idx]=false;
+  document.getElementById('vbtn-'+idx).classList.remove('recording');
+  document.getElementById('vbtn-'+idx).textContent='&#x1F399;';
 }
-function editVoice(){
-  const el = document.getElementById('voiceTranscript');
-  const cur = el.classList.contains('has-text') ? el.textContent : '';
-  const nv = prompt('修改語音辨識內容：', cur);
-  if(nv === null) return;
-  el.textContent = nv;
-  el.classList.toggle('has-text', !!nv.trim());
-  if(nv.trim()) parseVoiceInput(nv);
+function editVoice(idx){
+  const el=document.getElementById('vtx-'+idx);
+  const cur=el.classList.contains('has-text')?el.textContent:'';
+  const nv=prompt('修改語音內容：',cur);if(nv===null)return;
+  el.textContent=nv;el.classList.toggle('has-text',!!nv.trim());
+  if(nv.trim())parseVoice(idx,nv);
 }
-
-function parseVoiceInput(text){
-  const numMap = {'零':0,'一':1,'二':2,'兩':2,'三':3,'四':4,'五':5,'六':6,'七':7,'八':8,'九':9,'十':10,
-    '十一':11,'十二':12,'十三':13,'十四':14,'十五':15,'十六':16,'十七':17,'十八':18,'十九':19,'二十':20,
-    '三十':30,'四十':40,'五十':50,'一百':100};
-  let qty = null;
-  const numMatch = text.match(/([零一二兩三四五六七八九十百千]+|\d+)\s*(台|個|件|箱|組|套|顆|片|支|條|包|本|份|張|塊)/);
-  if(numMatch){
-    const ns = numMatch[1];
-    qty = numMap[ns] !== undefined ? numMap[ns] : parseInt(ns);
-  }
-  let name = text;
-  if(numMatch) name = name.replace(numMatch[0], '');
-  const remarkMatch = name.match(/(待入庫|待出庫|待維修|損壞|備用|已入庫|已出庫|需補貨|退料|領料)/g);
-  let remark = '';
-  if(remarkMatch){ remark = remarkMatch.join('、'); remarkMatch.forEach(r => { name = name.replace(r,''); }); }
-  name = name.replace(/[，。！？,!?]/g,'').trim();
-  if(name) document.getElementById('itemName').value = name;
-  if(qty !== null) document.getElementById('qty').value = qty;
-  if(remark) document.getElementById('remark').value = remark;
+function parseVoice(idx,text){
+  const nm={'零':0,'一':1,'二':2,'兩':2,'三':3,'四':4,'五':5,'六':6,'七':7,'八':8,'九':9,'十':10,'十一':11,'十二':12,'十三':13,'十四':14,'十五':15,'十六':16,'十七':17,'十八':18,'十九':19,'二十':20,'三十':30,'四十':40,'五十':50,'一百':100};
+  let qty=null;
+  const m=text.match(/([零一二兩三四五六七八九十百千]+|\d+)\s*(台|個|件|箱|組|套|顆|片|支|條|包|本|份|張|塊)/);
+  if(m){const ns=m[1];qty=nm[ns]!==undefined?nm[ns]:parseInt(ns);}
+  let name=text;if(m)name=name.replace(m[0],'');
+  name=name.replace(/[，。！？,!?]/g,'').trim();
+  if(name)document.getElementById('name-'+idx).value=name;
+  if(qty!==null)document.getElementById('qty-'+idx).value=qty;
 }
 
-/* ══════════════════════════════
-   LOCATION
-══════════════════════════════ */
 function onLocationChange(){
-  const val = document.getElementById('locationSelect').value;
-  const wrap = document.getElementById('customLocationWrap');
-  if(val === '__other__'){
-    wrap.style.display = 'block';
-    document.getElementById('customLocation').focus();
-  } else {
-    wrap.style.display = 'none';
-  }
+  const val=document.getElementById('locationSelect').value;
+  document.getElementById('customLocationWrap').style.display=val==='__other__'?'block':'none';
+  if(val==='__other__')document.getElementById('customLocation').focus();
 }
-
 function getLocation(){
-  const sel = document.getElementById('locationSelect').value;
-  if(sel === '__other__') return document.getElementById('customLocation').value.trim();
+  const sel=document.getElementById('locationSelect').value;
+  if(sel==='__other__')return document.getElementById('customLocation').value.trim();
   return sel;
 }
-
-/* ══════════════════════════════
-   STEPPER
-══════════════════════════════ */
-function stepQty(d){
-  const el = document.getElementById('qty');
-  el.value = Math.max(0, (parseInt(el.value)||0) + d);
+function stepQty(idx,d){
+  const el=document.getElementById('qty-'+idx);
+  el.value=Math.max(0,(parseInt(el.value)||0)+d);
 }
 
-/* ══════════════════════════════
-   SUBMIT
-══════════════════════════════ */
 async function submitRecord(){
-  const itemName = document.getElementById('itemName').value.trim();
-  const qty = parseInt(document.getElementById('qty').value) || 0;
-  const location = getLocation();
-  const remark = document.getElementById('remark').value.trim();
-
-  if(!itemName){ showToast('請輸入品項名稱', 'warn'); return; }
-  if(!location){ showToast('請選擇存放位置', 'warn'); return; }
-
-  const btn = document.getElementById('submitBtn');
-  btn.disabled = true;
-  btn.textContent = '處理中…';
-
-  const now = new Date();
-  const pad = n => String(n).padStart(2,'0');
-  const timeStr = `${now.getFullYear()}/${pad(now.getMonth()+1)}/${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
-  const id = 'WH' + now.getFullYear() + pad(now.getMonth()+1) + pad(now.getDate()) + '-' + String(records.length+1).padStart(4,'0');
-
-  let stampedPhoto = null;
-  if(photoDataURL){
-    try { stampedPhoto = await stampPhoto(photoDataURL, {timeStr, user:currentUser, itemName, qty, location, remark}); } catch(e){}
+  const location=getLocation();
+  if(!location){showToast('請選擇存放位置','warn');return;}
+  const items=[];
+  for(let i=0;i<3;i++){
+    const name=document.getElementById('name-'+i).value.trim();
+    const qty=parseInt(document.getElementById('qty-'+i).value)||0;
+    if(name)items.push({idx:i,name,qty,photo:photoData[i],stampedPhoto:null});
   }
-
-  const record = { id, time:timeStr, user:currentUser, itemName, qty, location, remark,
-    photo: photoDataURL, stampedPhoto, synced:false };
-  records.unshift(record);
-  save();
-
-  btn.disabled = false;
-  btn.textContent = '✓ 送出紀錄';
+  if(items.length===0){showToast('請至少填一個品項名稱','warn');return;}
+  const btn=document.getElementById('submitBtn');
+  btn.disabled=true;btn.textContent='處理中…';
+  const now=new Date();
+  const pad=n=>String(n).padStart(2,'0');
+  const timeStr=`${now.getFullYear()}/${pad(now.getMonth()+1)}/${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+  const id='WH'+now.getFullYear()+pad(now.getMonth()+1)+pad(now.getDate())+'-'+String(records.length+1).padStart(4,'0');
+  const remark=document.getElementById('remark').value.trim();
+  for(const it of items){
+    if(it.photo){
+      try{it.stampedPhoto=await stampPhoto(it.photo,{timeStr,user:currentUser,itemName:it.name,qty:it.qty,location,remark});}catch(e){}
+    }
+  }
+  const record={id,time:timeStr,user:currentUser,location,remark,items,synced:false};
+  records.unshift(record);save();
+  btn.disabled=false;btn.textContent='✓ 送出紀錄';
   showSuccessModal(record);
 }
 
-/* ══════════════════════════════
-   SUCCESS MODAL
-══════════════════════════════ */
 function showSuccessModal(record){
-  document.getElementById('successId').textContent = record.id + '　' + record.time;
-  document.getElementById('successBody').innerHTML = `
-    <div class="row"><span class="lbl">品項</span><span class="val">${record.itemName}</span></div>
-    <div class="row"><span class="lbl">數量</span><span class="val">${record.qty} 件</span></div>
-    <div class="row"><span class="lbl">位置</span><span class="val">${record.location||'—'}</span></div>
-    <div class="row"><span class="lbl">盤點人</span><span class="val">${record.user}</span></div>
-    ${record.remark ? `<div class="row"><span class="lbl">備註</span><span class="val">${record.remark}</span></div>` : ''}
+  document.getElementById('successId').textContent=record.id+'　'+record.time;
+  const ih=record.items.map(it=>`<div class="modal-isum"><div class="iname">品項${it.idx+1}：${it.name}</div><div class="imeta">數量 ${it.qty} 件　${it.photo?'📷 已拍照':'無照片'}</div></div>`).join('');
+  document.getElementById('successBody').innerHTML=ih+`
+    <div class="modal-row"><span class="lbl">位置</span><span class="val">${record.location||'—'}</span></div>
+    <div class="modal-row"><span class="lbl">盤點人</span><span class="val">${record.user}</span></div>
+    ${record.remark?`<div class="modal-row"><span class="lbl">備註</span><span class="val">${record.remark}</span></div>`:''}
   `;
-  document.getElementById('successSync').textContent = '📱 已儲存至本機';
   document.getElementById('successOverlay').classList.add('show');
 }
-
 function confirmSuccess(){
   document.getElementById('successOverlay').classList.remove('show');
   resetForm();
 }
-
 function resetForm(){
-  clearPhoto();
-  document.getElementById('itemName').value = '';
-  document.getElementById('qty').value = 1;
-  document.getElementById('locationSelect').value = '';
-  document.getElementById('customLocation').value = '';
-  document.getElementById('customLocationWrap').style.display = 'none';
-  document.getElementById('remark').value = '';
-  document.getElementById('voiceTranscript').textContent = '點右方麥克風開始說話，例如：「電腦主機五台」';
-  document.getElementById('voiceTranscript').classList.remove('has-text');
-  document.getElementById('voiceStatus').textContent = '';
-  window.scrollTo({top:0, behavior:'smooth'});
+  for(let i=0;i<3;i++){
+    clearPhoto(i);
+    document.getElementById('name-'+i).value='';
+    document.getElementById('qty-'+i).value=1;
+    document.getElementById('vtx-'+i).textContent='語音輸入品項'+(i+1)+'…';
+    document.getElementById('vtx-'+i).classList.remove('has-text');
+  }
+  document.getElementById('locationSelect').value='';
+  document.getElementById('customLocation').value='';
+  document.getElementById('customLocationWrap').style.display='none';
+  document.getElementById('remark').value='';
+  window.scrollTo({top:0,behavior:'smooth'});
 }
 
-/* ══════════════════════════════
-   STAMP PHOTO
-══════════════════════════════ */
-function stampPhoto(src, info){
-  return new Promise((res,rej) => {
-    const img = new Image();
-    img.onload = () => {
-      const cvs = document.createElement('canvas');
-      cvs.width = img.width; cvs.height = img.height;
-      const ctx = cvs.getContext('2d');
-      ctx.drawImage(img, 0, 0);
-      const lines = [
-        '時間：' + info.timeStr,
-        '盤點人：' + info.user,
-        '品項：' + info.itemName,
-        '數量：' + info.qty,
-        '位置：' + info.location,
-        ...(info.remark ? ['備註：' + info.remark] : [])
-      ];
-      const fs = Math.max(20, Math.round(img.width * 0.032));
-      const pad = fs * 0.7;
-      const lh = fs * 1.5;
-      const barH = lines.length * lh + pad * 2;
-      ctx.fillStyle = 'rgba(0,0,0,0.72)';
-      ctx.fillRect(0, img.height - barH, img.width, barH);
-      ctx.fillStyle = '#ffffff';
-      ctx.font = `${fs}px "Microsoft JhengHei","PingFang TC",sans-serif`;
-      ctx.textBaseline = 'top';
-      lines.forEach((l,i) => ctx.fillText(l, pad, img.height - barH + pad + i * lh));
-      res(cvs.toDataURL('image/jpeg', 0.92));
+function stampPhoto(src,info){
+  return new Promise((res,rej)=>{
+    const img=new Image();
+    img.onload=()=>{
+      const cvs=document.createElement('canvas');
+      cvs.width=img.width;cvs.height=img.height;
+      const ctx=cvs.getContext('2d');ctx.drawImage(img,0,0);
+      const lines=['時間：'+info.timeStr,'盤點人：'+info.user,'品項：'+info.itemName,'數量：'+info.qty,'位置：'+info.location,...(info.remark?['備註：'+info.remark]:[])];
+      const fs=Math.max(20,Math.round(img.width*0.032));
+      const pad=fs*0.7,lh=fs*1.5,barH=lines.length*lh+pad*2;
+      ctx.fillStyle='rgba(0,0,0,0.72)';ctx.fillRect(0,img.height-barH,img.width,barH);
+      ctx.fillStyle='#ffffff';ctx.font=`${fs}px "Microsoft JhengHei","PingFang TC",sans-serif`;ctx.textBaseline='top';
+      lines.forEach((l,i)=>ctx.fillText(l,pad,img.height-barH+pad+i*lh));
+      res(cvs.toDataURL('image/jpeg',0.92));
     };
-    img.onerror = rej;
-    img.src = src;
+    img.onerror=rej;img.src=src;
   });
 }
 
-/* ══════════════════════════════
-   RECORD LIST
-══════════════════════════════ */
 function renderList(){
-  const q = (document.getElementById('searchInput').value || '').toLowerCase();
-  const filtered = records.filter(r =>
-    (!q || r.itemName.toLowerCase().includes(q) ||
-     (r.location||'').toLowerCase().includes(q) ||
-     (r.remark||'').toLowerCase().includes(q))
-  );
-  const el = document.getElementById('recList');
-  if(!filtered.length){
-    el.innerHTML = `<div class="empty-state"><div class="ico">📭</div><p>${q?'找不到相符紀錄':'尚無盤點紀錄，開始拍照新增吧！'}</p></div>`;
-    return;
-  }
-  el.innerHTML = filtered.map(r => `
-    <div class="rec-item" onclick="openDetail('${r.id}')">
-      <div class="rec-top">
-        <div class="rec-thumb">${r.stampedPhoto||r.photo
-          ? `<img src="${r.stampedPhoto||r.photo}" alt="">`
-          : '📦'}</div>
-        <div class="rec-meta">
-          <div class="rec-name">${r.itemName}</div>
-          <div class="rec-detail">${r.id}　${r.user}</div>
-        </div>
-      </div>
-      <div class="rec-badges">
-        ${r.location ? `<span class="badge badge-loc">📍 ${r.location}</span>` : ''}
-        <span class="badge badge-qty">×${r.qty}</span>
-        <span class="badge badge-time">${r.time.split(' ')[0]}</span>
-      </div>
-    </div>
-  `).join('');
+  const q=(document.getElementById('searchInput').value||'').toLowerCase();
+  const filtered=records.filter(r=>{
+    const names=(r.items||[]).map(i=>i.name).join(' ').toLowerCase();
+    return !q||names.includes(q)||(r.location||'').toLowerCase().includes(q)||(r.remark||'').toLowerCase().includes(q);
+  });
+  const el=document.getElementById('recList');
+  if(!filtered.length){el.innerHTML=`<div class="empty-state"><div class="ico">&#x1F4ED;</div><p>${q?'找不到相符紀錄':'尚無盤點紀錄，開始新增吧！'}</p></div>`;return;}
+  el.innerHTML=filtered.map(r=>{
+    const items=r.items||[];
+    const nameStr=items.map(i=>i.name).filter(Boolean).join('、');
+    const thumbs=items.slice(0,3).map(it=>`<div class="rec-thumb">${it.stampedPhoto||it.photo?`<img src="${it.stampedPhoto||it.photo}" alt="">`:it.name?it.name.slice(0,2):'&#x1F4E6;'}</div>`).join('');
+    return `<div class="rec-item" onclick="openDetail('${r.id}')">
+      <div class="rec-top"><div class="rec-thumbs">${thumbs}</div><div class="rec-meta"><div class="rec-name">${nameStr||'（未填品項）'}</div><div class="rec-detail">${r.id}　${r.user}</div></div></div>
+      <div class="rec-badges">${r.location?`<span class="badge badge-loc">&#x1F4CD; ${r.location}</span>`:''}<span class="badge badge-qty">×${items.reduce((s,i)=>s+i.qty,0)}</span><span class="badge badge-time">${r.time.split(' ')[0]}</span></div>
+    </div>`;
+  }).join('');
 }
 
-/* ══════════════════════════════
-   DETAIL
-══════════════════════════════ */
 function openDetail(id){
-  const r = records.find(x => x.id===id);
-  if(!r) return;
-  currentDetailId = id;
-  document.getElementById('detailTitle').textContent = r.itemName;
-  const body = document.getElementById('detailBody');
-  body.innerHTML = `
-    ${r.stampedPhoto ? `<img class="detail-photo" src="${r.stampedPhoto}" alt="">` :
-      r.photo ? `<img class="detail-photo" src="${r.photo}" alt="">` : ''}
+  const r=records.find(x=>x.id===id);if(!r)return;
+  document.getElementById('detailTitle').textContent=r.id+'　'+r.location;
+  const items=r.items||[];
+  document.getElementById('detailBody').innerHTML=`
     <div class="detail-info">
       <div class="detail-row"><span class="k">編號</span><span class="v">${r.id}</span></div>
       <div class="detail-row"><span class="k">時間</span><span class="v">${r.time}</span></div>
       <div class="detail-row"><span class="k">盤點人</span><span class="v">${r.user}</span></div>
-      <div class="detail-row"><span class="k">品項</span><span class="v">${r.itemName}</span></div>
-      <div class="detail-row"><span class="k">數量</span><span class="v">${r.qty} 件</span></div>
       <div class="detail-row"><span class="k">位置</span><span class="v">${r.location||'—'}</span></div>
-      ${r.remark ? `<div class="detail-row"><span class="k">備註</span><span class="v">${r.remark}</span></div>` : ''}
+      ${r.remark?`<div class="detail-row"><span class="k">備註</span><span class="v">${r.remark}</span></div>`:''}
     </div>
-    <div class="detail-actions">
-      ${r.stampedPhoto ? `<button class="detail-dl-btn" onclick="dlPhoto('${id}','stamped')">⬇ 壓字照</button>` : ''}
-      ${r.photo ? `<button class="detail-dl-btn" onclick="dlPhoto('${id}','orig')">⬇ 原始照</button>` : ''}
-      <button class="detail-del-btn" onclick="deleteRecord('${id}')">🗑</button>
-    </div>
+    ${items.map(it=>`
+      <div class="detail-item">
+        <div class="detail-item-lbl">品項 ${it.idx+1}：${it.name}　×${it.qty}</div>
+        ${it.stampedPhoto?`<img class="detail-photo" src="${it.stampedPhoto}" alt="">`:it.photo?`<img class="detail-photo" src="${it.photo}" alt="">`:''}
+        <div class="detail-acts">
+          ${it.stampedPhoto?`<button class="det-btn" onclick="dlPhoto('${id}',${it.idx},'stamped')">&#x2B07; 壓字照</button>`:''}
+          ${it.photo?`<button class="det-btn" onclick="dlPhoto('${id}',${it.idx},'orig')">&#x2B07; 原始照</button>`:''}
+        </div>
+      </div>`).join('')}
+    <button class="det-del" style="width:100%;margin-top:8px" onclick="deleteRecord('${id}')">&#x1F5D1; 刪除此筆紀錄</button>
   `;
   document.getElementById('detailOverlay').classList.add('show');
 }
-function closeDetail(){ document.getElementById('detailOverlay').classList.remove('show'); }
-
-function dlPhoto(id, type){
-  const r = records.find(x=>x.id===id);
-  if(!r) return;
-  const src = type==='stamped' ? r.stampedPhoto : r.photo;
-  if(!src) return;
-  const a = document.createElement('a');
-  a.href = src; a.download = r.id + (type==='stamped'?'_壓字':'_原始') + '.jpg';
-  a.click();
+function closeDetail(){document.getElementById('detailOverlay').classList.remove('show');}
+function dlPhoto(id,itemIdx,type){
+  const r=records.find(x=>x.id===id);if(!r)return;
+  const it=(r.items||[]).find(x=>x.idx===itemIdx);if(!it)return;
+  const src=type==='stamped'?it.stampedPhoto:it.photo;if(!src)return;
+  const a=document.createElement('a');
+  a.href=src;a.download=r.id+'_品項'+(itemIdx+1)+(type==='stamped'?'_壓字':'_原始')+'.jpg';a.click();
 }
 function deleteRecord(id){
-  if(!confirm('確定刪除此筆紀錄？')) return;
-  records = records.filter(x=>x.id!==id);
-  save(); closeDetail(); renderList(); renderStats();
-  showToast('已刪除', 'warn');
+  if(!confirm('確定刪除此筆紀錄？'))return;
+  records=records.filter(x=>x.id!==id);
+  save();closeDetail();renderList();renderStats();showToast('已刪除','warn');
 }
 
-/* ══════════════════════════════
-   SETTINGS
-══════════════════════════════ */
 function saveUser(){
-  currentUser = document.getElementById('userName').value.trim() || 'Eric';
-  localStorage.setItem('wh_user', currentUser);
-  document.getElementById('hdrUser').textContent = '盤點人：' + currentUser;
-  showToast('已更新名稱', 'ok');
+  currentUser=document.getElementById('userName').value.trim()||'Eric';
+  localStorage.setItem('wh_user',currentUser);
+  document.getElementById('hdrUser').textContent='盤點人：'+currentUser;
+  showToast('已更新名稱','ok');
 }
 function renderStats(){
-  const today = new Date().toISOString().slice(0,10).replace(/-/g,'/');
-  const todayRecs = records.filter(r => r.time.startsWith(today));
-  document.getElementById('statGrid').innerHTML = `
+  const today=new Date().toISOString().slice(0,10).replace(/-/g,'/');
+  const todayR=records.filter(r=>r.time.startsWith(today));
+  const totalQty=records.reduce((s,r)=>(r.items||[]).reduce((ss,i)=>ss+i.qty,0)+s,0);
+  document.getElementById('statGrid').innerHTML=`
     <div class="stat-card"><div class="stat-num">${records.length}</div><div class="stat-lbl">總紀錄</div></div>
-    <div class="stat-card"><div class="stat-num">${todayRecs.length}</div><div class="stat-lbl">今日新增</div></div>
-    <div class="stat-card"><div class="stat-num">${records.reduce((s,r)=>s+r.qty,0)}</div><div class="stat-lbl">總盤點數量</div></div>
+    <div class="stat-card"><div class="stat-num">${todayR.length}</div><div class="stat-lbl">今日新增</div></div>
+    <div class="stat-card"><div class="stat-num">${totalQty}</div><div class="stat-lbl">總盤點數量</div></div>
     <div class="stat-card"><div class="stat-num">${new Set(records.map(r=>r.location).filter(Boolean)).size}</div><div class="stat-lbl">位置數</div></div>
   `;
 }
 
-/* ══════════════════════════════
-   EXPORT / IMPORT
-══════════════════════════════ */
 function exportCSV(){
-  if(!records.length){ showToast('尚無紀錄', 'warn'); return; }
-  const hdr = ['紀錄編號','記錄時間','盤點人','品項名稱','數量','位置','備註'];
-  const rows = records.map(r => [r.id,r.time,r.user,r.itemName,r.qty,r.location||'',r.remark||''].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(','));
-  const csv = '\uFEFF' + hdr.join(',') + '\n' + rows.join('\n');
-  const a = document.createElement('a');
-  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-  const d = new Date(); const p = n=>String(n).padStart(2,'0');
-  a.download = `倉庫盤點_${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}.csv`;
-  a.click(); showToast('CSV 已匯出', 'ok');
+  if(!records.length){showToast('尚無紀錄','warn');return;}
+  const hdr=['紀錄編號','記錄時間','盤點人','品項1名稱','品項1數量','品項2名稱','品項2數量','品項3名稱','品項3數量','存放位置','備註'];
+  const rows=records.map(r=>{
+    const its=r.items||[];
+    const get=(idx,key)=>{const i=its.find(x=>x.idx===idx);return i?i[key]||'':'';};
+    return [r.id,r.time,r.user,get(0,'name'),get(0,'qty'),get(1,'name'),get(1,'qty'),get(2,'name'),get(2,'qty'),r.location||'',r.remark||''].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',');
+  });
+  const csv='\uFEFF'+hdr.join(',')+'\n'+rows.join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  const d=new Date(),p=n=>String(n).padStart(2,'0');
+  a.download=`倉庫盤點_${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}.csv`;
+  a.click();showToast('CSV 已匯出','ok');
 }
 function exportJSON(){
-  const blob = new Blob([JSON.stringify(records,null,2)], {type:'application/json'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob); a.download = 'warehouse_backup.json'; a.click();
-  showToast('備份已匯出', 'ok');
+  const blob=new Blob([JSON.stringify(records,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);a.download='warehouse_backup.json';a.click();
+  showToast('備份已匯出','ok');
 }
 function importJSON(){
-  const input = document.createElement('input');
-  input.type='file'; input.accept='.json';
-  input.onchange = e => {
-    const file = e.target.files[0]; if(!file) return;
-    const reader = new FileReader();
-    reader.onload = ev => {
-      try {
-        const data = JSON.parse(ev.target.result);
-        if(!Array.isArray(data)) throw new Error();
-        records = data; save(); renderList(); renderStats();
-        showToast(`已匯入 ${data.length} 筆`, 'ok');
-      } catch { showToast('格式錯誤', 'err'); }
+  const input=document.createElement('input');input.type='file';input.accept='.json';
+  input.onchange=e=>{
+    const file=e.target.files[0];if(!file)return;
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      try{
+        const data=JSON.parse(ev.target.result);
+        if(!Array.isArray(data))throw new Error();
+        records=data;save();renderList();renderStats();
+        showToast(`已匯入 ${data.length} 筆`,'ok');
+      }catch{showToast('格式錯誤','err');}
     };
     reader.readAsText(file);
   };
   input.click();
 }
 function clearAll(){
-  if(!confirm('確定清除所有紀錄？此操作無法復原！')) return;
-  records=[]; save(); renderList(); renderStats(); showToast('已清除', 'warn');
+  if(!confirm('確定清除所有紀錄？此操作無法復原！'))return;
+  records=[];save();renderList();renderStats();showToast('已清除','warn');
 }
 
-/* ══════════════════════════════
-   TOAST
-══════════════════════════════ */
 let toastTimer;
-function showToast(msg, type=''){
-  const el = document.getElementById('toast');
-  el.textContent = msg; el.className = 'toast show ' + type;
+function showToast(msg,type=''){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.className='toast show '+type;
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+  toastTimer=setTimeout(()=>el.classList.remove('show'),2200);
 }
 
-/* ══════════════════════════════
-   PWA SERVICE WORKER
-══════════════════════════════ */
 if('serviceWorker' in navigator){
-  const swCode = `
-    const CACHE='wh-v2';
-    self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(['/'])));self.skipWaiting()});
-    self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)))});
-  `;
-  const blob = new Blob([swCode],{type:'application/javascript'});
+  const swCode=`const CACHE='wh-v3';self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(['\/'])));self.skipWaiting()});self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)))});`;
+  const blob=new Blob([swCode],{type:'application/javascript'});
   navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(()=>{});
 }
 
