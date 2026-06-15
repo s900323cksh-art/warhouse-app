@@ -144,6 +144,9 @@ body{background:var(--bg);color:var(--text);font-family:'Microsoft JhengHei','Pi
 .toast.ok{border-color:var(--success);color:var(--success)}
 .toast.warn{border-color:var(--warn);color:var(--warn)}
 .toast.err{border-color:var(--danger);color:var(--danger)}
+.det-upload-btn{background:rgba(0,212,168,.1);border-color:var(--accent);color:var(--accent)}
+.det-upload-btn:active{background:rgba(0,212,168,.2)}
+.det-no-photo{background:var(--bg-input);border:1.5px dashed var(--border);border-radius:var(--radius-sm);padding:18px;text-align:center;font-size:13px;color:var(--text-3);margin-bottom:8px}
 input[type=file]{display:none}
 @supports(padding-bottom:env(safe-area-inset-bottom)){.page{padding-bottom:calc(100px + env(safe-area-inset-bottom))}}
 </style>
@@ -439,17 +442,21 @@ async function submitRecord(){
   }
   if(items.length===0){showToast('請至少填一個品項名稱','warn');return;}
   const btn=document.getElementById('submitBtn');
-  btn.disabled=true;btn.textContent='處理中…';
+  btn.disabled=true;
   const now=new Date();
   const pad=n=>String(n).padStart(2,'0');
   const timeStr=`${now.getFullYear()}/${pad(now.getMonth()+1)}/${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
   const id='WH'+now.getFullYear()+pad(now.getMonth()+1)+pad(now.getDate())+'-'+String(records.length+1).padStart(4,'0');
   const remark=document.getElementById('remark').value.trim();
-  for(const it of items){
-    if(it.photo){
+  const withPhoto=items.filter(it=>it.photo);
+  if(withPhoto.length>0){
+    for(let i=0;i<withPhoto.length;i++){
+      const it=withPhoto[i];
+      btn.textContent=`照片壓字 ${i+1}/${withPhoto.length}…`;
       try{it.stampedPhoto=await stampPhoto(it.photo,{timeStr,user:currentUser,itemName:it.name,qty:it.qty,location,remark});}catch(e){}
     }
   }
+  btn.textContent='儲存中…';
   const record={id,time:timeStr,user:currentUser,location,remark,items,synced:false};
   records.unshift(record);save();
   btn.disabled=false;btn.textContent='✓ 送出紀錄';
@@ -536,19 +543,66 @@ function openDetail(id){
       ${r.remark?`<div class="detail-row"><span class="k">備註</span><span class="v">${r.remark}</span></div>`:''}
     </div>
     ${items.map(it=>`
-      <div class="detail-item">
+      <div class="detail-item" id="ditem-${id}-${it.idx}">
         <div class="detail-item-lbl">品項 ${it.idx+1}：${it.name}　×${it.qty}</div>
-        ${it.stampedPhoto?`<img class="detail-photo" src="${it.stampedPhoto}" alt="">`:it.photo?`<img class="detail-photo" src="${it.photo}" alt="">`:''}
+        <div class="detail-photo-wrap" id="dpw-${id}-${it.idx}">
+          ${it.stampedPhoto
+            ? `<img class="detail-photo" src="${it.stampedPhoto}" alt="">`
+            : it.photo
+              ? `<img class="detail-photo" src="${it.photo}" alt="">`
+              : `<div class="det-no-photo">📷 尚未拍照</div>`}
+        </div>
         <div class="detail-acts">
-          ${it.stampedPhoto?`<button class="det-btn" onclick="dlPhoto('${id}',${it.idx},'stamped')">&#x2B07; 壓字照</button>`:''}
-          ${it.photo?`<button class="det-btn" onclick="dlPhoto('${id}',${it.idx},'orig')">&#x2B07; 原始照</button>`:''}
+          ${it.stampedPhoto?`<button class="det-btn" onclick="dlPhoto('${id}',${it.idx},'stamped')">⬇ 壓字照</button>`:''}
+          ${it.photo?`<button class="det-btn" onclick="dlPhoto('${id}',${it.idx},'orig')">⬇ 原始照</button>`:''}
+          <button class="det-btn det-upload-btn" onclick="document.getElementById('upload-${id}-${it.idx}').click()">
+            ${it.photo?'🔄 換照片':'📷 補拍照'}
+          </button>
+          <input type="file" id="upload-${id}-${it.idx}" accept="image/*" capture="environment"
+            onchange="uploadDetailPhoto(this,'${id}',${it.idx})">
+          <input type="file" id="uploadg-${id}-${it.idx}" accept="image/*"
+            onchange="uploadDetailPhoto(this,'${id}',${it.idx})">
+          <button class="det-btn" onclick="document.getElementById('uploadg-${id}-${it.idx}').click()">🖼 相簿</button>
         </div>
       </div>`).join('')}
-    <button class="det-del" style="width:100%;margin-top:8px" onclick="deleteRecord('${id}')">&#x1F5D1; 刪除此筆紀錄</button>
+    <button class="det-del" style="width:100%;margin-top:8px" onclick="deleteRecord('${id}')">🗑 刪除此筆紀錄</button>
   `;
   document.getElementById('detailOverlay').classList.add('show');
 }
 function closeDetail(){document.getElementById('detailOverlay').classList.remove('show');}
+
+async function uploadDetailPhoto(input,id,itemIdx){
+  const file=input.files[0];if(!file)return;
+  const r=records.find(x=>x.id===id);if(!r)return;
+  const it=(r.items||[]).find(x=>x.idx===itemIdx);if(!it)return;
+  showToast('上傳中，請稍候…','');
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    it.photo=e.target.result;
+    // 重新壓字
+    try{
+      it.stampedPhoto=await stampPhoto(it.photo,{
+        timeStr:r.time,user:r.user,itemName:it.name,qty:it.qty,location:r.location,remark:r.remark
+      });
+    }catch(ex){ it.stampedPhoto=null; }
+    save();
+    // 更新詳情頁面中的照片區塊
+    const pw=document.getElementById(`dpw-${id}-${itemIdx}`);
+    if(pw){
+      pw.innerHTML=it.stampedPhoto
+        ?`<img class="detail-photo" src="${it.stampedPhoto}" alt="">`
+        :`<img class="detail-photo" src="${it.photo}" alt="">`;
+    }
+    // 更新補拍按鈕文字
+    const uploadBtn=input.closest('.detail-acts')?.querySelector('.det-upload-btn');
+    if(uploadBtn) uploadBtn.textContent='🔄 換照片';
+    // 更新列表縮圖
+    renderList();
+    showToast('✅ 照片已更新','ok');
+  };
+  reader.readAsDataURL(file);
+  input.value='';
+}
 function dlPhoto(id,itemIdx,type){
   const r=records.find(x=>x.id===id);if(!r)return;
   const it=(r.items||[]).find(x=>x.idx===itemIdx);if(!it)return;
