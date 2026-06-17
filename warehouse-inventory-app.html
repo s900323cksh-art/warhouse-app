@@ -467,16 +467,13 @@ async function syncToSheet(record){
         idx: it.idx, name: it.name, qty: it.qty
       }))
     };
-    const controller = new AbortController();
-    const timer = setTimeout(()=>controller.abort(), 10000);
-    const resp = await fetch(SCRIPT_URL, {
+    const timeout = new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),12000));
+    const fetchReq = fetch(SCRIPT_URL,{
       method:'POST',
       headers:{'Content-Type':'text/plain'},
-      body: JSON.stringify(payload),
-      signal: controller.signal
-    });
-    clearTimeout(timer);
-    const result = await resp.json();
+      body: JSON.stringify(payload)
+    }).then(r=>r.json());
+    const result = await Promise.race([fetchReq, timeout]);
     return result.success === true;
   } catch(e){ return false; }
 }
