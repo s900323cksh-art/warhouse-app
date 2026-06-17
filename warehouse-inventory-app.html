@@ -148,6 +148,19 @@ body{background:var(--bg);color:var(--text);font-family:'Microsoft JhengHei','Pi
 .det-upload-btn:active{background:rgba(0,212,168,.2)}
 .det-no-photo{background:var(--bg-input);border:1.5px dashed var(--border);border-radius:var(--radius-sm);padding:18px;text-align:center;font-size:13px;color:var(--text-3);margin-bottom:8px}
 input[type=file]{display:none}
+/* 進度條 */
+.progress-overlay{display:none;position:fixed;inset:0;z-index:250;background:rgba(8,14,22,.75);backdrop-filter:blur(4px);align-items:center;justify-content:center;flex-direction:column;gap:16px}
+.progress-overlay.show{display:flex}
+.progress-box{background:var(--bg-modal);border:1px solid var(--border);border-radius:var(--radius);padding:24px 28px;width:80%;max-width:300px;text-align:center}
+.progress-label{font-size:13px;color:var(--text-2);margin-bottom:14px}
+.progress-bar-wrap{background:var(--bg-input);border-radius:30px;height:10px;overflow:hidden}
+.progress-bar{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-dk));border-radius:30px;transition:width .3s ease;width:0%}
+.progress-step{font-size:12px;color:var(--text-3);margin-top:10px}
+/* 列表補上傳區 */
+.rec-upload-row{display:flex;gap:6px;padding:8px 0 2px;flex-wrap:wrap}
+.rec-upload-btn{flex:1;min-width:80px;padding:7px 4px;border-radius:var(--radius-sm);border:1px solid var(--accent);background:rgba(0,212,168,.08);color:var(--accent);font-size:11px;cursor:pointer;text-align:center;font-weight:700}
+.rec-upload-btn:active{background:rgba(0,212,168,.2)}
+.rec-upload-btn.has-photo{border-color:var(--border);background:transparent;color:var(--text-2);font-weight:400}
 @supports(padding-bottom:env(safe-area-inset-bottom)){.page{padding-bottom:calc(100px + env(safe-area-inset-bottom))}}
 </style>
 </head>
@@ -292,6 +305,15 @@ input[type=file]{display:none}
   </div>
 </div>
 
+<!-- 進度條 -->
+<div class="progress-overlay" id="progressOverlay">
+  <div class="progress-box">
+    <div class="progress-label" id="progressLabel">準備中…</div>
+    <div class="progress-bar-wrap"><div class="progress-bar" id="progressBar"></div></div>
+    <div class="progress-step" id="progressStep"></div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="successOverlay">
   <div class="modal-box">
     <div class="modal-icon">&#x2705;</div>
@@ -431,6 +453,21 @@ function stepQty(idx,d){
   el.value=Math.max(0,(parseInt(el.value)||0)+d);
 }
 
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzOdSUzh1iNUCw5Md5opgCzOt3kGvUijcj4gKSMoeQDbOHZZbc1PujFq6_8ODdCJBNR/exec';
+
+async function syncToSheet(record){
+  try{
+    const payload = JSON.stringify(record);
+    const resp = await fetch(SCRIPT_URL, {
+      method:'POST',
+      headers:{'Content-Type':'text/plain'},
+      body: payload
+    });
+    const result = await resp.json();
+    return result.success === true;
+  } catch(e){ return false; }
+}
+
 async function submitRecord(){
   const location=getLocation();
   if(!location){showToast('請選擇存放位置','warn');return;}
@@ -441,24 +478,61 @@ async function submitRecord(){
     if(name)items.push({idx:i,name,qty,photo:photoData[i],stampedPhoto:null});
   }
   if(items.length===0){showToast('請至少填一個品項名稱','warn');return;}
+
   const btn=document.getElementById('submitBtn');
-  btn.disabled=true;
+  btn.disabled=true;btn.textContent='處理中…';
+
+  // 顯示進度條
+  const overlay=document.getElementById('progressOverlay');
+  const pLabel=document.getElementById('progressLabel');
+  const pBar=document.getElementById('progressBar');
+  const pStep=document.getElementById('progressStep');
+  overlay.classList.add('show');
+
+  const setProgress=(pct,label,step='')=>{
+    pBar.style.width=pct+'%';
+    pLabel.textContent=label;
+    pStep.textContent=step;
+  };
+
+  setProgress(10,'準備資料…','');
+
   const now=new Date();
   const pad=n=>String(n).padStart(2,'0');
   const timeStr=`${now.getFullYear()}/${pad(now.getMonth()+1)}/${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
   const id='WH'+now.getFullYear()+pad(now.getMonth()+1)+pad(now.getDate())+'-'+String(records.length+1).padStart(4,'0');
   const remark=document.getElementById('remark').value.trim();
+
   const withPhoto=items.filter(it=>it.photo);
-  if(withPhoto.length>0){
-    for(let i=0;i<withPhoto.length;i++){
+  const total=withPhoto.length;
+
+  if(total>0){
+    for(let i=0;i<total;i++){
       const it=withPhoto[i];
-      btn.textContent=`照片壓字 ${i+1}/${withPhoto.length}…`;
+      const pct=10+Math.round((i/total)*70);
+      setProgress(pct,'照片處理中…',`品項 ${it.idx+1} 壓字 (${i+1}/${total})`);
+      await new Promise(r=>setTimeout(r,30)); // 讓畫面更新
       try{it.stampedPhoto=await stampPhoto(it.photo,{timeStr,user:currentUser,itemName:it.name,qty:it.qty,location,remark});}catch(e){}
     }
   }
-  btn.textContent='儲存中…';
+
+  setProgress(85,'同步到 Google Sheet…','');
+  await new Promise(r=>setTimeout(r,100));
+
   const record={id,time:timeStr,user:currentUser,location,remark,items,synced:false};
   records.unshift(record);save();
+
+  // 同步到 Google Sheet
+  setProgress(92,'上傳中…','');
+  const synced = await syncToSheet(record);
+  record.synced = synced;
+  save();
+
+  setProgress(100, synced ? '✅ 儲存並同步完成！' : '⚠️ 已存本機（同步失敗）','');
+  await new Promise(r=>setTimeout(r,700));
+
+  overlay.classList.remove('show');
+  pBar.style.width='0%';
   btn.disabled=false;btn.textContent='✓ 送出紀錄';
   showSuccessModal(record);
 }
@@ -523,9 +597,17 @@ function renderList(){
     const items=r.items||[];
     const nameStr=items.map(i=>i.name).filter(Boolean).join('、');
     const thumbs=items.slice(0,3).map(it=>`<div class="rec-thumb">${it.stampedPhoto||it.photo?`<img src="${it.stampedPhoto||it.photo}" alt="">`:it.name?it.name.slice(0,2):'&#x1F4E6;'}</div>`).join('');
+    // 補上傳按鈕：每個品項一個
+    const uploadBtns=items.map(it=>`
+      <button class="rec-upload-btn${it.photo?' has-photo':''}" onclick="event.stopPropagation();document.getElementById('rul-${r.id}-${it.idx}').click()">
+        ${it.photo?`🔄 ${it.name.slice(0,4)}`:`📷 ${it.name.slice(0,4)}`}
+      </button>
+      <input type="file" id="rul-${r.id}-${it.idx}" accept="image/*" capture="environment" onchange="uploadDetailPhoto(this,'${r.id}',${it.idx})">
+    `).join('');
     return `<div class="rec-item" onclick="openDetail('${r.id}')">
       <div class="rec-top"><div class="rec-thumbs">${thumbs}</div><div class="rec-meta"><div class="rec-name">${nameStr||'（未填品項）'}</div><div class="rec-detail">${r.id}　${r.user}</div></div></div>
       <div class="rec-badges">${r.location?`<span class="badge badge-loc">&#x1F4CD; ${r.location}</span>`:''}<span class="badge badge-qty">×${items.reduce((s,i)=>s+i.qty,0)}</span><span class="badge badge-time">${r.time.split(' ')[0]}</span></div>
+      <div class="rec-upload-row" onclick="event.stopPropagation()">${uploadBtns}</div>
     </div>`;
   }).join('');
 }
