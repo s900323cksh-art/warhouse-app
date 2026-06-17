@@ -455,26 +455,49 @@ function stepQty(idx,d){
 
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzOdSUzh1iNUCw5Md5opgCzOt3kGvUijcj4gKSMoeQDbOHZZbc1PujFq6_8ODdCJBNR/exec';
 
+async function compressPhoto(dataURL, quality=0.35, maxSize=1024){
+  return new Promise(res=>{
+    const img = new Image();
+    img.onload = ()=>{
+      let w=img.width, h=img.height;
+      if(w>maxSize||h>maxSize){
+        if(w>h){h=Math.round(h*maxSize/w);w=maxSize;}
+        else{w=Math.round(w*maxSize/h);h=maxSize;}
+      }
+      const cvs=document.createElement('canvas');
+      cvs.width=w;cvs.height=h;
+      cvs.getContext('2d').drawImage(img,0,0,w,h);
+      res(cvs.toDataURL('image/jpeg', quality));
+    };
+    img.onerror=()=>res(null);
+    img.src=dataURL;
+  });
+}
+
 async function syncToSheet(record){
   try{
-    // 移除 base64 照片，只傳文字資料（照片由 Apps Script 另外處理）
-    const lite = {
+    // 壓縮照片（中品質，最大 1024px）
+    const items = await Promise.all((record.items||[]).map(async it=>{
+      let photo = null;
+      if(it.photo){
+        photo = await compressPhoto(it.photo, 0.35, 1024);
+      }
+      return { idx:it.idx, name:it.name, qty:it.qty, photo };
+    }));
+
+    const payload = {
       id: record.id,
       time: record.time,
       user: record.user,
       location: record.location,
       remark: record.remark,
-      items: (record.items||[]).map(it=>({
-        idx: it.idx,
-        name: it.name,
-        qty: it.qty
-        // 不傳 photo / stampedPhoto
-      }))
+      items
     };
+
     const resp = await fetch(SCRIPT_URL, {
       method:'POST',
       headers:{'Content-Type':'text/plain'},
-      body: JSON.stringify(lite)
+      body: JSON.stringify(payload)
     });
     const result = await resp.json();
     return result.success === true;
