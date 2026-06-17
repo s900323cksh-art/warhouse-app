@@ -457,11 +457,24 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzOdSUzh1iNUCw5Md5op
 
 async function syncToSheet(record){
   try{
-    const payload = JSON.stringify(record);
+    // 移除 base64 照片，只傳文字資料（照片由 Apps Script 另外處理）
+    const lite = {
+      id: record.id,
+      time: record.time,
+      user: record.user,
+      location: record.location,
+      remark: record.remark,
+      items: (record.items||[]).map(it=>({
+        idx: it.idx,
+        name: it.name,
+        qty: it.qty
+        // 不傳 photo / stampedPhoto
+      }))
+    };
     const resp = await fetch(SCRIPT_URL, {
       method:'POST',
       headers:{'Content-Type':'text/plain'},
-      body: payload
+      body: JSON.stringify(lite)
     });
     const result = await resp.json();
     return result.success === true;
